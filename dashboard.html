@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Sistem Database Prodi</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        <?!= include('styles_css'); ?>
+    </style>
+</head>
+<body>
+    <div class="dashboard-wrap">
+        <!-- Sidebar Overlay (For Mobile) -->
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="mainSidebar">
+            <div class="brand-area">
+                <div style="display:flex; align-items:center; gap:12px; flex:1;">
+                    <div class="brand-icon"><i class="fa-solid fa-graduation-cap"></i></div>
+                    <div class="brand-text">
+                        <h2 style="margin: 0;">DataProdi</h2>
+                    </div>
+                </div>
+                <button class="close-sidebar" onclick="toggleSidebar()">
+                    <i class="fa-solid fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="menu-container">
+                <div class="menu-section">
+                    <div class="menu-section-title">Menu Utama</div>
+                    <a href="#" class="menu-item active" data-target="dashboard">
+                        <i class="fa-solid fa-chart-pie"></i> Dashboard
+                    </a>
+                </div>
+                
+                <div class="menu-section">
+                    <div class="menu-section-title">Data Studi</div>
+                    <div id="dynamicMenuList">
+                        <div style="padding:10px 25px; font-size:13px; color:#7f8c8d;">
+                            <i class="fa-solid fa-spinner fa-spin"></i> Memuat menu...
+                        </div>
+                    </div>
+                </div>
+
+                <div class="menu-section">
+                    <div class="menu-section-title">Pengaturan</div>
+                    <a href="#" class="menu-item" data-target="kategori">
+                        <i class="fa-solid fa-folder-tree"></i> Kategori & Menu
+                    </a>
+                    <a href="#" class="menu-item" data-target="sub_kategori">
+                        <i class="fa-solid fa-sitemap"></i> Sub-Kategori
+                    </a>
+                    <a href="#" class="menu-item" data-target="setting">
+                        <i class="fa-solid fa-gear"></i> Setting Sistem
+                    </a>
+                </div>
+            </div>
+            
+            <div class="user-profile-sm" style="cursor: default;">
+                <div class="avatar"><i class="fa-solid fa-user-tie"></i></div>
+                <div class="user-info" style="flex:1;">
+                    <h4 id="sidebarUsername">Admin</h4>
+                    <p>Aktif</p>
+                </div>
+                <button id="logoutBtn" title="Keluar / Logout" style="background:var(--light-red); width:35px; height:35px; border-radius:8px; border:none; color:var(--primary-red); cursor:pointer; font-size:16px; transition:0.3s;" onmouseover="this.style.background='var(--primary-red)'; this.style.color='white';" onmouseout="this.style.background='var(--light-red)'; this.style.color='var(--primary-red)';">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Mobile Header -->
+            <header class="mobile-header">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div class="brand-icon" style="width:30px; height:30px; font-size:14px;"><i class="fa-solid fa-graduation-cap"></i></div>
+                    <h2 style="color:var(--primary-red); font-size:16px; margin: 0;">DataProdi</h2>
+                </div>
+                <button class="mobile-toggle" onclick="toggleSidebar()">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </header>
+
+            <!-- Desktop Header -->
+            <header class="top-header">
+                <div class="header-title">
+                    <h3 id="pageTitle">Dashboard</h3>
+                </div>
+                <div>
+                     <span id="headerClock" style="font-size:14px; font-weight:500; color:var(--text-muted); padding:6px 12px; background:var(--bg-color); border-radius:20px; border:1px solid var(--border-color);"></span>
+                </div>
+            </header>
+
+            <div class="content-wrapper" id="mainContentArea">
+                 <div class="card">
+                     <div class="card-header">
+                         <div class="card-title"><i class="fa-solid fa-spinner fa-spin"></i> Memuat dashboard...</div>
+                     </div>
+                 </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Main Modal Tambah Arsip -->
+    <div class="modal-overlay" id="uploadModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Tambah Data Arsip</h3>
+                <button class="modal-close" onclick="closeModal('uploadModal')"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <form id="uploadForm">
+                <div class="form-group">
+                    <label for="inputJudul"><i class="fa-solid fa-tag" style="margin-right:5px; color:var(--primary-red)"></i>Nama Arsip</label>
+                    <input type="text" id="inputJudul" class="form-control" required placeholder="Cth: SK Mengajar 2024">
+                </div>
+                <div class="form-group">
+                    <label for="inputTahun"><i class="fa-solid fa-calendar" style="margin-right:5px; color:var(--primary-red)"></i>Tahun Data</label>
+                    <select id="inputTahun" class="form-control" required></select>
+                </div>
+                <div class="form-group" id="subKategoriGroup">
+                    <label for="inputSubKategori"><i class="fa-solid fa-layer-group" style="margin-right:5px; color:var(--primary-red)"></i>Sub-Kategori</label>
+                    <select id="inputSubKategori" class="form-control"></select>
+                </div>
+                <div class="form-group">
+                    <label for="inputFile"><i class="fa-solid fa-cloud-arrow-up" style="margin-right:5px; color:var(--primary-red)"></i>Unggah File</label>
+                    <input type="file" id="inputFile" class="form-control" required>
+                </div>
+                <div id="uploadProgress" style="display:none; margin-bottom:15px;">
+                    <div style="background:#e0e0e0; border-radius:8px; overflow:hidden; height:8px;">
+                        <div id="progressBar" style="background:var(--primary-red); height:100%; width:0%; transition: width 0.3s;"></div>
+                    </div>
+                    <p style="font-size:12px; color:var(--text-muted); margin-top:5px;" id="progressText">Mengunggah...</p>
+                </div>
+                <button type="submit" id="btnUpload" class="btn btn-primary" style="width: 100%"><i class="fa-solid fa-cloud-arrow-up"></i> Simpan Arsip</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Tambah Kategori -->
+    <div class="modal-overlay" id="kategoriModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="kategoriModalTitle">Tambah Kategori</h3>
+                <button class="modal-close" onclick="closeModal('kategoriModal')"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <form id="kategoriForm">
+                <input type="hidden" id="editKategoriId" value="">
+                <div class="form-group">
+                    <label for="inputNamaKategori"><i class="fa-solid fa-folder" style="margin-right:5px; color:var(--primary-red)"></i>Nama Kategori</label>
+                    <input type="text" id="inputNamaKategori" class="form-control" required placeholder="Cth: Penelitian">
+                </div>
+                <div class="form-group">
+                    <label for="inputIconKategori"><i class="fa-solid fa-icons" style="margin-right:5px; color:var(--primary-red)"></i>Kelas Ikon Font Awesome</label>
+                    <input type="text" id="inputIconKategori" class="form-control" placeholder="fa-solid fa-flask" value="fa-solid fa-folder">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%"><i class="fa-solid fa-check"></i> Simpan</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Tambah Sub-Kategori -->
+    <div class="modal-overlay" id="subKategoriModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Tambah Sub-Kategori</h3>
+                <button class="modal-close" onclick="closeModal('subKategoriModal')"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <form id="subKategoriForm">
+                <div class="form-group">
+                    <label for="inputSubKatParent"><i class="fa-solid fa-folder-tree" style="margin-right:5px; color:var(--primary-red)"></i>Kategori Induk</label>
+                    <select id="inputSubKatParent" class="form-control" required></select>
+                </div>
+                <div class="form-group">
+                    <label for="inputNamaSubKat"><i class="fa-solid fa-tag" style="margin-right:5px; color:var(--primary-red)"></i>Nama Sub-Kategori</label>
+                    <input type="text" id="inputNamaSubKat" class="form-control" required placeholder="Cth: Jurnal Nasional">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%"><i class="fa-solid fa-check"></i> Simpan</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        <?!= include('app_js'); ?>
+    </script>
+</body>
+</html>

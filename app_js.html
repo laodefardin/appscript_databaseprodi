@@ -1,0 +1,471 @@
+<script>
+// ============================================================
+// app_js.html — Client-Side JavaScript
+// ============================================================
+
+var kategoriData = [];
+var activeCategory = 'dashboard';
+var dashChartInstance = null;
+
+var CACHE = {
+    subKategori: {},
+    dataAkademik: {},
+    counts: {},
+    loginLogs: [],
+    loaded: false
+};
+
+// ==================================================================
+// LOADING OVERLAY GLOBAL
+// ==================================================================
+function showLoading(text) {
+    var el = document.getElementById('globalLoading');
+    var txt = document.getElementById('globalLoadingText');
+    if (txt) txt.innerText = text || 'Memproses...';
+    if (el) { el.style.display = 'flex'; }
+}
+function hideLoading() {
+    var el = document.getElementById('globalLoading');
+    if (el) el.style.display = 'none';
+}
+
+// ==================================================================
+// INIT
+// ==================================================================
+function initDashboard() {
+    setupNavigation();
+    populateYearDropdowns();
+    preloadData(null); // null = pertama kali, arahkan ke dashboard
+}
+
+function preloadData(afterLoad) {
+    // Jika tidak ada callback, tampilkan loading di konten utama
+    if (!afterLoad) {
+        var mainContent = document.getElementById('mainContentArea');
+        mainContent.innerHTML = '<div class="card"><div class="card-header"><div class="card-title"><i class="fa-solid fa-spinner fa-spin"></i> Memuat seluruh data...</div></div></div>';
+    }
+    google.script.run
+        .withSuccessHandler(function(result) {
+            kategoriData = result.kategori;
+            CACHE.subKategori = result.subKategori || {};
+            CACHE.dataAkademik = result.dataAkademik || {};
+            CACHE.counts = result.counts || {};
+            CACHE.loginLogs = result.loginLogs || [];
+            CACHE.loaded = true;
+            renderMenu();
+            if (typeof afterLoad === 'function') {
+                // Kembalikan ke halaman yang sedang aktif sebelumnya
+                afterLoad();
+            } else {
+                // Pertama kali login → ke dashboard
+                var dashItem = document.querySelector('[data-target="dashboard"]');
+                if (dashItem) dashItem.click();
+            }
+        })
+        .withFailureHandler(function(err) {
+            var mc = document.getElementById('mainContentArea');
+            mc.innerHTML = '<div class="card"><p style="color:red;"><i class="fa-solid fa-circle-exclamation"></i> Gagal memuat: ' + err.message + '</p><br><button class="btn btn-primary" onclick="preloadData(null)"><i class="fa-solid fa-rotate"></i> Coba Lagi</button></div>';
+        })
+        .preloadAllData();
+
+}
+
+function populateYearDropdowns() {
+    var sel = document.getElementById('inputTahun');
+    if (!sel) return;
+    var currentYear = new Date().getFullYear();
+    sel.innerHTML = '';
+    for (var y = currentYear; y >= currentYear - 10; y--) {
+        var opt = document.createElement('option');
+        opt.value = y; opt.textContent = y;
+        sel.appendChild(opt);
+    }
+}
+
+// ==================================================================
+// MENU DINAMIS
+// ==================================================================
+function renderMenu() {
+    var mc = document.getElementById('dynamicMenuList');
+    if (!mc) return;
+    var html = '';
+    kategoriData.forEach(function(kat) {
+        html += '<a href="#" class="menu-item dynamic-item" data-target="kat_' + kat.id + '" data-kat-id="' + kat.id + '" data-kat-nama="' + kat.nama + '"><i class="' + (kat.icon || 'fa-solid fa-folder') + '"></i> ' + kat.nama + '</a>';
+    });
+    mc.innerHTML = html;
+}
+
+// ==================================================================
+// NAVIGASI SPA
+// ==================================================================
+function setupNavigation() {
+    document.body.addEventListener('click', function(e) {
+        var item = e.target.closest('.menu-item');
+        if (!item) return;
+        e.preventDefault();
+        document.querySelectorAll('.menu-item').forEach(function(el) { el.classList.remove('active'); });
+        item.classList.add('active');
+        var target = item.getAttribute('data-target');
+        if (window.innerWidth <= 768) { document.getElementById('mainSidebar').classList.remove('active'); document.getElementById('sidebarOverlay').classList.remove('active'); }
+        var titleEl = document.getElementById('pageTitle');
+        var mc = document.getElementById('mainContentArea');
+
+        if (target === 'dashboard') { activeCategory = 'dashboard'; titleEl.innerText = 'Dashboard'; renderDashboard(mc); }
+        else if (target === 'kategori') { activeCategory = 'kategori'; titleEl.innerText = 'Manajemen Kategori'; renderKategoriPage(mc); }
+        else if (target === 'sub_kategori') { activeCategory = 'sub_kategori'; titleEl.innerText = 'Manajemen Sub-Kategori'; renderSubKategoriPage(mc); }
+        else if (target === 'setting') { activeCategory = 'setting'; titleEl.innerText = 'Setting Sistem'; renderSettingPage(mc); }
+        else if (target.startsWith('kat_')) {
+            var katId = item.getAttribute('data-kat-id');
+            var katNama = item.getAttribute('data-kat-nama');
+            activeCategory = katId; titleEl.innerText = katNama;
+            renderDataPage(katId, katNama, mc);
+        }
+    });
+}
+
+// ==================================================================
+// DASHBOARD
+// ==================================================================
+function renderDashboard(container) {
+    var cardsHtml = '';
+    kategoriData.forEach(function(kat) {
+        var cnt = CACHE.counts[kat.id] || 0;
+        cardsHtml += '<div class="stat-card"><div class="stat-icon"><i class="' + (kat.icon || 'fa-solid fa-folder') + '"></i></div><div class="stat-info"><h4>' + kat.nama + '</h4><span>' + cnt + '</span></div></div>';
+    });
+    var logsHtml = '';
+    var logs = CACHE.loginLogs;
+    if (logs.length === 0) { logsHtml = '<p style="color:var(--text-muted); padding:10px;">Belum ada riwayat login.</p>'; }
+    else { logs.forEach(function(log, idx) {
+        var ic = idx === 0;
+        logsHtml += '<div class="login-log-item"><div class="log-icon" style="color:' + (ic ? '#27ae60' : 'var(--text-muted)') + '"><i class="fa-solid ' + (ic ? 'fa-circle-check' : 'fa-clock-rotate-left') + '"></i></div><div class="log-details" style="width:100%;"><h5 style="display:flex; justify-content:space-between;">' + log.username + (ic ? ' <span style="font-size:10px; padding:2px 6px; background:#e8f8f5; color:#1abc9c; border-radius:10px;">Saat Ini</span>' : '') + '</h5><p>' + log.waktu + '</p></div></div>';
+    }); }
+
+    container.innerHTML =
+        '<div class="card" style="margin-bottom:25px; border-left:4px solid var(--primary-red); padding:20px 25px;"><div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;"><div style="width:55px; height:55px; background:var(--light-red); border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--primary-red); font-size:26px;"><i class="fa-solid fa-hands-clapping"></i></div><div style="flex:1; min-width:200px;"><h3 style="margin:0; font-size:18px;">Selamat Datang Kembali!</h3><p style="margin:4px 0 0; color:var(--text-muted); font-size:14px;">Ringkasan data arsip dan statistik database program studi.</p></div><button class="btn btn-secondary" onclick="preloadData()" style="white-space:nowrap;"><i class="fa-solid fa-rotate"></i> Refresh Data</button></div></div>' +
+        '<div class="dash-cards-grid">' + cardsHtml + '</div>' +
+        '<div class="dash-content-grid"><div class="card"><div class="card-header header-no-border"><div class="card-title"><i class="fa-solid fa-chart-column" style="margin-right:8px; color:var(--primary-red)"></i>Statistik Arsip</div></div><div style="position:relative; height:300px; width:100%;"><canvas id="myChart"></canvas></div></div><div class="card"><div class="card-header header-no-border"><div class="card-title"><i class="fa-solid fa-clock-rotate-left" style="margin-right:8px; color:var(--primary-red)"></i>Login Terakhir</div></div><div class="login-log" style="max-height:380px; overflow-y:auto; padding-right:4px;">' + logsHtml + '</div></div></div>';
+
+
+    setTimeout(function() {
+        var ctx = document.getElementById('myChart'); if (!ctx) return;
+        var labels = [], vals = [];
+        kategoriData.forEach(function(k) { labels.push(k.nama); vals.push(CACHE.counts[k.id] || 0); });
+        if (dashChartInstance) dashChartInstance.destroy();
+        dashChartInstance = new Chart(ctx, { type:'bar', data:{labels:labels, datasets:[{label:'Jumlah Arsip', data:vals, backgroundColor:'#C62828', borderRadius:4}]}, options:{responsive:true, maintainAspectRatio:false, scales:{y:{beginAtZero:true, ticks:{precision:0}}}} });
+    }, 200);
+}
+
+// ==================================================================
+// DATA ARSIP (cache, instan)
+// ==================================================================
+function renderDataPage(katId, katNama, container) {
+    var subList = CACHE.subKategori[katId] || [];
+    var dataList = CACHE.dataAkademik[katId] || [];
+    buildDataPageHtml(container, katId, katNama, subList, dataList);
+}
+
+function buildDataPageHtml(container, katId, katNama, subList, dataList) {
+    var subOpt = '<option value="ALL">Semua Sub</option>';
+    subList.forEach(function(s) { subOpt += '<option value="' + s.nama + '">' + s.nama + '</option>'; });
+    var yr = new Date().getFullYear(), yrOpt = '<option value="ALL">Semua</option>';
+    for (var y = yr; y >= yr - 10; y--) yrOpt += '<option value="' + y + '">' + y + '</option>';
+
+    container.innerHTML =
+        '<div class="card"><div class="card-header"><div class="card-title"><i class="fa-solid fa-database" style="margin-right:8px; color:var(--primary-red)"></i>Arsip ' + katNama + '</div><button class="btn btn-primary" onclick="openUploadModal(\'' + katId + '\', \'' + katNama + '\')"><i class="fa-solid fa-plus"></i> Tambah Arsip</button></div>' +
+        '<div class="filter-bar"><div class="form-group"><label><i class="fa-solid fa-calendar" style="margin-right:4px;"></i>Tahun:</label><select id="filterTahun" class="form-control" onchange="applyFilter()">' + yrOpt + '</select></div><div class="form-group"><label><i class="fa-solid fa-layer-group" style="margin-right:4px;"></i>Sub:</label><select id="filterSub" class="form-control" onchange="applyFilter()">' + subOpt + '</select></div><div style="flex:1"></div><button class="btn btn-success" onclick="doExportExcel(\'' + katId + '\')"><i class="fa-solid fa-file-excel"></i> Export Excel</button></div>' +
+        '<div class="table-responsive"><table><thead><tr><th>Kode Arsip</th><th>Nama Arsip</th><th>Sub Kategori</th><th>Tipe File</th><th>Tgl Upload</th><th style="width:100px;">Aksi</th></tr></thead><tbody id="tableBody"></tbody></table></div></div>';
+
+    window._currentDataList = dataList;
+    window._currentKatId = katId;
+    window._currentKatNama = katNama;
+    applyFilter();
+}
+
+function applyFilter() {
+    var data = window._currentDataList || [];
+    var ft = document.getElementById('filterTahun'), fs = document.getElementById('filterSub');
+    var fv = ft ? ft.value : 'ALL', sv = fs ? fs.value : 'ALL';
+    var filtered = data.filter(function(d) { return (fv === 'ALL' || String(d.tahun) === fv) && (sv === 'ALL' || d.sub_kategori === sv); });
+    var tb = document.getElementById('tableBody'); if (!tb) return;
+
+    if (filtered.length === 0) { tb.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px; color:var(--text-muted)"><i class="fa-solid fa-inbox" style="font-size:24px; display:block; margin-bottom:10px;"></i>Belum ada arsip.</td></tr>'; return; }
+
+    var html = '';
+    filtered.forEach(function(d) {
+        var fi = 'fa-file', bc = 'badge-file', t = (d.tipe_file || 'FILE').toUpperCase();
+        if (t.indexOf('PDF') > -1) { fi = 'fa-file-pdf'; bc = 'badge-pdf'; }
+        else if (t.indexOf('XLS') > -1 || t.indexOf('CSV') > -1) { fi = 'fa-file-excel'; bc = 'badge-xls'; }
+        else if (t.indexOf('DOC') > -1) { fi = 'fa-file-word'; bc = 'badge-file'; }
+        else if (t.indexOf('PNG') > -1 || t.indexOf('JPG') > -1 || t.indexOf('JPEG') > -1) { fi = 'fa-file-image'; bc = 'badge-img'; }
+        else if (t.indexOf('ZIP') > -1 || t.indexOf('RAR') > -1) { fi = 'fa-file-zipper'; bc = 'badge-file'; }
+
+        html += '<tr>' +
+            '<td style="font-family:monospace; font-weight:600; font-size:12px; color:var(--primary-red);"><i class="fa-solid fa-barcode" style="color:var(--text-muted); margin-right:4px;"></i>' + (d.kode_arsip || '-') + '</td>' +
+            '<td><div style="display:flex; flex-direction:column;"><a href="' + (d.file_url || '#') + '" target="_blank" class="file-link"><i class="fa-solid ' + fi + '"></i> ' + d.nama_arsip + '</a><span style="font-size:11px; color:var(--text-muted); margin-top:4px;">Tahun: ' + d.tahun + '</span></div></td>' +
+            '<td><span class="badge badge-success">' + (d.sub_kategori || '-') + '</span></td>' +
+            '<td><span class="badge ' + bc + '">' + t + '</span></td>' +
+            '<td style="color:var(--text-muted); font-size:13px;"><i class="fa-regular fa-calendar-days" style="margin-right:5px; color:var(--primary-red)"></i>' + (d.tgl_upload || '-') + '</td>' +
+            '<td><div class="action-btns">' +
+                (d.file_url ? '<a href="' + d.file_url + '" target="_blank" class="btn-icon btn-view" title="Lihat"><i class="fa-solid fa-eye"></i></a>' : '') +
+                '<button class="btn-icon btn-delete" title="Hapus" onclick="confirmHapusArsip(\'' + d.id + '\', \'' + d.nama_arsip.replace(/'/g, "\\'") + '\')"><i class="fa-solid fa-trash-can"></i></button>' +
+            '</div></td></tr>';
+    });
+    tb.innerHTML = html;
+}
+
+// ==================================================================
+// UPLOAD ARSIP
+// ==================================================================
+function openUploadModal(katId, katNama) {
+    document.getElementById('uploadModal').classList.add('active');
+    window._uploadKatId = katId;
+    window._uploadKatNama = katNama;
+    populateYearDropdowns();
+    clearDropFile();
+    document.getElementById('uploadForm').reset();
+    var subList = CACHE.subKategori[katId] || [];
+    var sel = document.getElementById('inputSubKategori');
+    sel.innerHTML = '<option value="-">- Tanpa Sub-Kategori -</option>';
+    subList.forEach(function(s) { sel.innerHTML += '<option value="' + s.nama + '">' + s.nama + '</option>'; });
+}
+
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var fileInput = document.getElementById('inputFile');
+    if (!fileInput.files.length) { showNotif('error', 'File Kosong', 'Silakan pilih atau seret file untuk diunggah.'); return; }
+
+    var btn = document.getElementById('btnUpload');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengunggah...';
+    var progress = document.getElementById('uploadProgress');
+    var pBar = document.getElementById('progressBar');
+    var pText = document.getElementById('progressText');
+    progress.style.display = 'block'; pBar.style.width = '30%'; pText.innerText = 'Membaca file...';
+
+    var file = fileInput.files[0];
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+        pBar.style.width = '60%'; pText.innerText = 'Mengirim ke server...';
+        var bytes = new Uint8Array(ev.target.result), binary = '';
+        for (var i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+
+        var katId = window._uploadKatId, katNama = window._uploadKatNama;
+        google.script.run
+            .withSuccessHandler(function(r) {
+                pBar.style.width = '100%'; pText.innerText = 'Selesai!';
+                setTimeout(function() {
+                    closeModal('uploadModal');
+                    progress.style.display = 'none'; pBar.style.width = '0%';
+                    btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Simpan Arsip';
+                    document.getElementById('uploadForm').reset(); clearDropFile();
+                    showNotif('success', 'Berhasil!', r.message);
+                    preloadData(function() { renderDataPage(katId, katNama, document.getElementById('mainContentArea')); });
+                }, 400);
+            })
+            .withFailureHandler(function(err) {
+                progress.style.display = 'none'; btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Simpan Arsip';
+                showNotif('error', 'Gagal Mengunggah', err.message);
+            })
+            .uploadArsip({ namaArsip: document.getElementById('inputJudul').value.trim(), tahun: document.getElementById('inputTahun').value, subKategori: document.getElementById('inputSubKategori').value, idKategori: window._uploadKatId, namaKategori: window._uploadKatNama, fileBase64: btoa(binary), fileName: file.name, fileMime: file.type });
+    };
+    reader.readAsArrayBuffer(file);
+});
+
+// ==================================================================
+// HAPUS ARSIP (Modal Konfirmasi)
+// ==================================================================
+function confirmHapusArsip(id, nama) {
+    var katId = window._currentKatId, katNama = window._currentKatNama;
+    showConfirm('<i class="fa-solid fa-trash-can"></i>', 'var(--light-red)', 'var(--primary-red)',
+        'Hapus Arsip?', 'Arsip "' + nama + '" dan file di Drive akan dihapus permanen.',
+        '<i class="fa-solid fa-trash-can"></i> Ya, Hapus', '', function() {
+            showLoading('Menghapus arsip...');
+            google.script.run
+                .withSuccessHandler(function(r) { hideLoading(); showNotif('success', 'Dihapus!', r.message); preloadData(function() { renderDataPage(katId, katNama, document.getElementById('mainContentArea')); }); })
+                .withFailureHandler(function(err) { hideLoading(); showNotif('error', 'Gagal', err.message); })
+                .deleteArsip(id);
+        });
+}
+
+// ==================================================================
+// EXPORT EXCEL
+// ==================================================================
+function doExportExcel(katId) {
+    showConfirm('<i class="fa-solid fa-file-excel"></i>', '#e8f5e9', '#2e7d32',
+        'Export ke Excel?', 'Semua data arsip kategori ini akan diekspor ke file Excel.',
+        '<i class="fa-solid fa-file-excel"></i> Ya, Export', '#2e7d32', function() {
+            showLoading('Membuat file Excel...');
+            google.script.run
+                .withSuccessHandler(function(r) {
+                    hideLoading();
+                    if (r.success) window.open(r.downloadUrl, '_blank');
+                    showNotif('success', 'Berhasil!', r.message);
+                })
+                .withFailureHandler(function(err) {
+                    hideLoading();
+                    showNotif('error', 'Gagal Export', err.message);
+                })
+                .exportDataToExcel(katId);
+        });
+}
+
+
+// ==================================================================
+// KATEGORI
+// ==================================================================
+function renderKategoriPage(container) {
+    var rows = '';
+    kategoriData.forEach(function(kat, idx) {
+        rows += '<tr><td>' + (idx + 1) + '</td><td><i class="' + (kat.icon || 'fa-solid fa-folder') + '" style="margin-right:8px; color:var(--primary-red);"></i>' + kat.nama + '</td><td style="font-family:monospace; font-size:12px; color:var(--text-muted);">' + (kat.icon || '-') + '</td><td><div class="action-btns"><button class="btn-icon btn-edit" onclick="editKategori(\'' + kat.id + '\', \'' + kat.nama + '\', \'' + (kat.icon || '') + '\')"><i class="fa-solid fa-pen"></i></button><button class="btn-icon btn-delete" onclick="confirmHapusKategori(\'' + kat.id + '\', \'' + kat.nama + '\')"><i class="fa-solid fa-trash-can"></i></button></div></td></tr>';
+    });
+    container.innerHTML = '<div class="card"><div class="card-header"><div class="card-title"><i class="fa-solid fa-folder-tree" style="margin-right:8px; color:var(--primary-red)"></i>Daftar Kategori</div><button class="btn btn-primary" onclick="openKategoriModal()"><i class="fa-solid fa-plus"></i> Tambah Kategori</button></div><div class="table-responsive"><table><thead><tr><th>No</th><th>Nama Kategori</th><th>Icon</th><th style="width:100px;">Aksi</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>';
+}
+
+function openKategoriModal(eId, eNama, eIcon) {
+    document.getElementById('kategoriModal').classList.add('active');
+    document.getElementById('editKategoriId').value = eId || '';
+    document.getElementById('inputNamaKategori').value = eNama || '';
+    document.getElementById('inputIconKategori').value = eIcon || 'fa-solid fa-folder';
+    document.getElementById('kategoriModalTitle').innerText = eId ? 'Ubah Kategori' : 'Tambah Kategori';
+}
+function editKategori(id, nama, icon) { openKategoriModal(id, nama, icon); }
+
+document.getElementById('kategoriForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var btn = document.getElementById('btnKategori');
+    btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+    var eId = document.getElementById('editKategoriId').value;
+    var nama = document.getElementById('inputNamaKategori').value.trim();
+    var icon = document.getElementById('inputIconKategori').value.trim();
+    closeModal('kategoriModal');
+    showLoading(eId ? 'Memperbarui kategori...' : 'Menambah kategori...');
+    var done = function(r) { hideLoading(); btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-check"></i> Simpan'; showNotif('success', 'Berhasil!', r.message); preloadData(function() { renderKategoriPage(document.getElementById('mainContentArea')); }); };
+    var fail = function(err) { hideLoading(); btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-check"></i> Simpan'; showNotif('error', 'Gagal', err.message); };
+    if (eId) google.script.run.withSuccessHandler(done).withFailureHandler(fail).updateKategori(eId, nama, icon);
+    else google.script.run.withSuccessHandler(done).withFailureHandler(fail).addKategori(nama, icon);
+});
+
+function confirmHapusKategori(id, nama) {
+    showConfirm('<i class="fa-solid fa-folder-minus"></i>', 'var(--light-red)', 'var(--primary-red)',
+        'Hapus Kategori?', 'Kategori "' + nama + '" akan dihapus.',
+        '<i class="fa-solid fa-trash-can"></i> Ya, Hapus', '', function() {
+            showLoading('Menghapus kategori...');
+            google.script.run.withSuccessHandler(function(r) { hideLoading(); showNotif('success', 'Dihapus!', r.message); preloadData(function() { renderKategoriPage(document.getElementById('mainContentArea')); }); }).withFailureHandler(function(err) { hideLoading(); showNotif('error', 'Gagal', err.message); }).deleteKategori(id);
+        });
+}
+
+// ==================================================================
+// SUB-KATEGORI
+// ==================================================================
+function renderSubKategoriPage(container) {
+    var allSubs = [];
+    kategoriData.forEach(function(kat) { (CACHE.subKategori[kat.id] || []).forEach(function(s) { allSubs.push({ id: s.id, nama: s.nama, kategoriNama: kat.nama }); }); });
+    var rows = '';
+    if (allSubs.length === 0) rows = '<tr><td colspan="4" style="text-align:center; padding:30px; color:var(--text-muted);">Belum ada sub-kategori.</td></tr>';
+    else allSubs.forEach(function(s, i) { rows += '<tr><td>' + (i + 1) + '</td><td>' + s.kategoriNama + '</td><td>' + s.nama + '</td><td><button class="btn-icon btn-delete" onclick="confirmHapusSubKat(\'' + s.id + '\', \'' + s.nama + '\')"><i class="fa-solid fa-trash-can"></i></button></td></tr>'; });
+    container.innerHTML = '<div class="card"><div class="card-header"><div class="card-title"><i class="fa-solid fa-sitemap" style="margin-right:8px; color:var(--primary-red)"></i>Daftar Sub-Kategori</div><button class="btn btn-primary" onclick="openSubKategoriModal()"><i class="fa-solid fa-plus"></i> Tambah Sub-Kategori</button></div><div class="table-responsive"><table><thead><tr><th>No</th><th>Kategori Induk</th><th>Nama Sub</th><th style="width:80px;">Aksi</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>';
+}
+
+function openSubKategoriModal() {
+    document.getElementById('subKategoriModal').classList.add('active');
+    document.getElementById('subKategoriForm').reset();
+    var sel = document.getElementById('inputSubKatParent'); sel.innerHTML = '';
+    kategoriData.forEach(function(k) { sel.innerHTML += '<option value="' + k.id + '">' + k.nama + '</option>'; });
+}
+
+document.getElementById('subKategoriForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var btn = document.getElementById('btnSubKategori');
+    btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+    var parentId = document.getElementById('inputSubKatParent').value;
+    var nama = document.getElementById('inputNamaSubKat').value.trim();
+    closeModal('subKategoriModal');
+    showLoading('Menambah sub-kategori...');
+    google.script.run
+        .withSuccessHandler(function(r) { hideLoading(); btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-check"></i> Simpan'; showNotif('success', 'Berhasil!', r.message); preloadData(function() { renderSubKategoriPage(document.getElementById('mainContentArea')); }); })
+        .withFailureHandler(function(err) { hideLoading(); btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-check"></i> Simpan'; showNotif('error', 'Gagal', err.message); })
+        .addSubKategori(parentId, nama);
+});
+
+function confirmHapusSubKat(id, nama) {
+    showConfirm('<i class="fa-solid fa-trash-can"></i>', 'var(--light-red)', 'var(--primary-red)',
+        'Hapus Sub-Kategori?', '"' + nama + '" dan foldernya di Drive akan dihapus.',
+        '<i class="fa-solid fa-trash-can"></i> Ya, Hapus', '', function() {
+            showLoading('Menghapus sub-kategori...');
+            google.script.run.withSuccessHandler(function(r) { hideLoading(); showNotif('success', 'Dihapus!', r.message); preloadData(function() { renderSubKategoriPage(document.getElementById('mainContentArea')); }); }).withFailureHandler(function(err) { hideLoading(); showNotif('error', 'Gagal', err.message); }).deleteSubKategori(id);
+        });
+}
+
+// ==================================================================
+// SETTING — USER MANAGEMENT
+// ==================================================================
+function renderSettingPage(container) {
+    container.innerHTML = '<div class="card"><div class="card-header"><div class="card-title"><i class="fa-solid fa-spinner fa-spin"></i> Memuat...</div></div></div>';
+    google.script.run
+        .withSuccessHandler(function(users) {
+            var rows = '';
+            users.forEach(function(u, i) {
+                var sb = u.status === 'active' ? '<span class="badge badge-success"><i class="fa-solid fa-circle-check" style="margin-right:4px;"></i>Active</span>' : '<span class="badge badge-pdf"><i class="fa-solid fa-circle-xmark" style="margin-right:4px;"></i>Inactive</span>';
+                var rb = u.role === 'admin' ? '<span class="badge" style="background:#fff3e0; color:#e65100;"><i class="fa-solid fa-shield-halved" style="margin-right:4px;"></i>Admin</span>' : '<span class="badge badge-file"><i class="fa-solid fa-user" style="margin-right:4px;"></i>Operator</span>';
+                rows += '<tr><td>' + (i + 1) + '</td><td><i class="fa-solid fa-user-circle" style="margin-right:8px; color:var(--primary-red);"></i><strong>' + u.username + '</strong></td><td>' + rb + '</td><td>' + sb + '</td><td><div class="action-btns"><button class="btn-icon btn-edit" title="Ubah Password" onclick="openPasswordModal(\'' + u.id + '\', \'' + u.username + '\')"><i class="fa-solid fa-key"></i></button><button class="btn-icon" title="Toggle Status" style="background:#f39c12;" onclick="confirmToggle(\'' + u.id + '\', \'' + u.username + '\')"><i class="fa-solid fa-toggle-on"></i></button><button class="btn-icon btn-delete" title="Hapus" onclick="confirmHapusUser(\'' + u.id + '\', \'' + u.username + '\')"><i class="fa-solid fa-trash-can"></i></button></div></td></tr>';
+            });
+            container.innerHTML =
+                '<div class="card"><div class="card-header"><div class="card-title"><i class="fa-solid fa-users-gear" style="margin-right:8px; color:var(--primary-red)"></i>Manajemen User & Role</div><button class="btn btn-primary" onclick="openUserModal()"><i class="fa-solid fa-user-plus"></i> Tambah User</button></div><div class="table-responsive"><table><thead><tr><th>No</th><th>Username</th><th>Role</th><th>Status</th><th style="width:130px;">Aksi</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>' +
+                '<div class="card"><div class="card-header header-no-border"><div class="card-title"><i class="fa-solid fa-info-circle" style="margin-right:8px; color:var(--primary-red)"></i>Informasi Sistem</div></div><div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:15px;"><div style="padding:15px; background:var(--bg-color); border-radius:8px;"><p style="font-size:12px; color:var(--text-muted); margin-bottom:5px;">Platform</p><p style="font-weight:600;">Google Apps Script</p></div><div style="padding:15px; background:var(--bg-color); border-radius:8px;"><p style="font-size:12px; color:var(--text-muted); margin-bottom:5px;">Database</p><p style="font-weight:600;">Google Sheets</p></div><div style="padding:15px; background:var(--bg-color); border-radius:8px;"><p style="font-size:12px; color:var(--text-muted); margin-bottom:5px;">Storage</p><p style="font-weight:600;">Google Drive</p></div><div style="padding:15px; background:var(--bg-color); border-radius:8px;"><p style="font-size:12px; color:var(--text-muted); margin-bottom:5px;">Total Kategori</p><p style="font-weight:600;">' + kategoriData.length + ' kategori</p></div></div></div>';
+        })
+        .withFailureHandler(function(err) { container.innerHTML = '<div class="card"><p style="color:red;">Gagal: ' + err.message + '</p></div>'; })
+        .getUserList();
+}
+
+function openUserModal() { document.getElementById('userModal').classList.add('active'); document.getElementById('userForm').reset(); }
+
+document.getElementById('userForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var btn = document.getElementById('btnAddUser');
+    btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+    google.script.run
+        .withSuccessHandler(function(r) { closeModal('userModal'); btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Simpan User'; showNotif(r.success ? 'success' : 'error', r.success ? 'Berhasil!' : 'Gagal', r.message); if (r.success) renderSettingPage(document.getElementById('mainContentArea')); })
+        .withFailureHandler(function(err) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Simpan User'; showNotif('error', 'Gagal', err.message); })
+        .addUser(document.getElementById('inputNewUsername').value.trim(), document.getElementById('inputNewPassword').value, document.getElementById('inputNewRole').value);
+});
+
+function openPasswordModal(id, username) { document.getElementById('passwordModal').classList.add('active'); document.getElementById('editUserId').value = id; document.getElementById('editUserLabel').value = username; document.getElementById('inputEditPassword').value = ''; }
+
+document.getElementById('passwordForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var btn = document.getElementById('btnPassword');
+    btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+    google.script.run
+        .withSuccessHandler(function(r) { closeModal('passwordModal'); btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-check"></i> Simpan Password'; showNotif('success', 'Berhasil!', r.message); })
+        .withFailureHandler(function(err) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-check"></i> Simpan Password'; showNotif('error', 'Gagal', err.message); })
+        .updateUserPassword(document.getElementById('editUserId').value, document.getElementById('inputEditPassword').value);
+});
+
+function confirmToggle(id, username) {
+    showConfirm('<i class="fa-solid fa-toggle-on"></i>', '#fff3e0', '#f39c12',
+        'Ubah Status User?', 'Status "' + username + '" akan diubah (aktif ↔ nonaktif).',
+        '<i class="fa-solid fa-toggle-on"></i> Ya, Ubah', '#f39c12', function() {
+            google.script.run.withSuccessHandler(function(r) { showNotif('success', 'Berhasil!', r.message); renderSettingPage(document.getElementById('mainContentArea')); }).toggleUserStatus(id);
+        });
+}
+
+function confirmHapusUser(id, username) {
+    showConfirm('<i class="fa-solid fa-user-xmark"></i>', 'var(--light-red)', 'var(--primary-red)',
+        'Hapus User?', 'User "' + username + '" akan dihapus permanen.',
+        '<i class="fa-solid fa-trash-can"></i> Ya, Hapus', '', function() {
+            google.script.run.withSuccessHandler(function(r) { showNotif(r.success ? 'success' : 'error', r.success ? 'Dihapus!' : 'Gagal', r.message); if (r.success) renderSettingPage(document.getElementById('mainContentArea')); }).deleteUser(id);
+        });
+}
+
+// ==================================================================
+// UTILITIES
+// ==================================================================
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+// ==================================================================
+// INIT SESI — Dipanggil di sini setelah SEMUA fungsi sudah terdefinisi
+// Ini memastikan checkSession() bisa memanggil initDashboard() dengan benar
+// ==================================================================
+checkSession();
+</script>
