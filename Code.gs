@@ -16,7 +16,8 @@ const SHEET = {
   SUB_KATEGORI: 'Sub_Kategori',
   DATA_AKADEMIK: 'Data_Akademik',
   LOGIN_LOG: 'Login_Log',
-  SETTINGS: 'Settings'
+  SETTINGS: 'Settings',
+  PANDUAN: 'Panduan'
 };
 
 // ==================================================================
@@ -26,7 +27,7 @@ const SHEET = {
 function doGet(e) {
   return HtmlService.createTemplateFromFile('index')
     .evaluate()
-    .setTitle('DataProdi - Sistem Database Program Studi')
+    .setTitle('GRID - Gerbang Repositori Informasi Data Prodi')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
 }
@@ -90,8 +91,11 @@ function initSheetHeaders(sheet, name) {
       break;
     case SHEET.SETTINGS:
       sheet.appendRow(['key','value']);
-      sheet.appendRow(['app_name','DataProdi']);
+      sheet.appendRow(['app_name','GRID']);
       sheet.appendRow(['root_folder_id', CONFIG.ROOT_FOLDER_ID]);
+      break;
+    case SHEET.PANDUAN:
+      sheet.appendRow(['id_kategori','judul_panduan','isi_panduan']);
       break;
   }
 }
@@ -104,10 +108,16 @@ function generateId() {
   return Utilities.getUuid().replace(/-/g, '').substring(0, 12);
 }
 
-function generateKodeArsip(namaKategori) {
-  var prefix = namaKategori.replace(/\s+/g,'').substring(0,3).toUpperCase();
-  var num = Math.floor(1000 + Math.random() * 9000);
-  return 'ARS-' + prefix + '-' + num;
+function generateKodeArsip() {
+  var now = new Date();
+  var yyyy = now.getFullYear();
+  var dd   = String(now.getDate()).padStart(2, '0');
+  var mm   = String(now.getMonth() + 1).padStart(2, '0');
+  var HH   = String(now.getHours()).padStart(2, '0');
+  var min  = String(now.getMinutes()).padStart(2, '0');
+  var ss   = String(now.getSeconds()).padStart(2, '0');
+  // Format: PM + YYYY + DD + MM + HH + mm + ss  →  contoh: PM20262404113022
+  return 'PM' + yyyy + dd + mm + HH + min + ss;
 }
 
 function encodePwd(str) {
@@ -365,7 +375,7 @@ function getAllDataCount() {
 function uploadArsip(formData) {
   var sheet = getSheet(SHEET.DATA_AKADEMIK);
   var id = generateId();
-  var kodeArsip = generateKodeArsip(formData.namaKategori);
+  var kodeArsip = generateKodeArsip();
   
   // Cari target folder
   var katSheet = getSheet(SHEET.KATEGORI);
@@ -599,13 +609,46 @@ function preloadAllData() {
   // Ambil login logs
   var logs = getLoginLogs();
   
+  // Ambil panduan per kategori
+  var panduan = getAllPanduan();
+  
   return {
     kategori: kategoriList,
     subKategori: allSubKategori,
     dataAkademik: allData,
     counts: counts,
-    loginLogs: logs
+    loginLogs: logs,
+    panduan: panduan
   };
+}
+
+// ==================================================================
+// PANDUAN PER KATEGORI
+// ==================================================================
+
+function getAllPanduan() {
+  var sheet = getSheet(SHEET.PANDUAN);
+  var data = sheet.getDataRange().getValues();
+  var result = {};
+  for (var i = 1; i < data.length; i++) {
+    result[data[i][0]] = { judul: data[i][1] || '', isi: data[i][2] || '' };
+  }
+  return result;
+}
+
+function savePanduan(idKategori, judul, isi) {
+  var sheet = getSheet(SHEET.PANDUAN);
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][0] === idKategori) {
+      sheet.getRange(i + 1, 2).setValue(judul);
+      sheet.getRange(i + 1, 3).setValue(isi);
+      return { success: true, message: 'Panduan berhasil diperbarui.' };
+    }
+  }
+  // Belum ada, buat baris baru
+  sheet.appendRow([idKategori, judul, isi]);
+  return { success: true, message: 'Panduan berhasil disimpan.' };
 }
 
 // ==================================================================
@@ -619,5 +662,6 @@ function setupInitial() {
   getSheet(SHEET.DATA_AKADEMIK);
   getSheet(SHEET.LOGIN_LOG);
   getSheet(SHEET.SETTINGS);
+  getSheet(SHEET.PANDUAN);
   Logger.log('Setup selesai! Semua sheet telah dibuat.');
 }

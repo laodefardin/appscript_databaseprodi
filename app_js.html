@@ -12,6 +12,7 @@ var CACHE = {
     dataAkademik: {},
     counts: {},
     loginLogs: [],
+    panduan: {},
     loaded: false
 };
 
@@ -51,6 +52,7 @@ function preloadData(afterLoad) {
             CACHE.dataAkademik = result.dataAkademik || {};
             CACHE.counts = result.counts || {};
             CACHE.loginLogs = result.loginLogs || [];
+            CACHE.panduan = result.panduan || {};
             CACHE.loaded = true;
             renderMenu();
             if (typeof afterLoad === 'function') {
@@ -83,7 +85,7 @@ function populateYearDropdowns() {
 }
 
 // ==================================================================
-// MENU DINAMIS
+// MENU DINAMIS (role-aware)
 // ==================================================================
 function renderMenu() {
     var mc = document.getElementById('dynamicMenuList');
@@ -93,19 +95,35 @@ function renderMenu() {
         html += '<a href="#" class="menu-item dynamic-item" data-target="kat_' + kat.id + '" data-kat-id="' + kat.id + '" data-kat-nama="' + kat.nama + '"><i class="' + (kat.icon || 'fa-solid fa-folder') + '"></i> ' + kat.nama + '</a>';
     });
     mc.innerHTML = html;
+
+    // Sembunyikan menu khusus admin jika operator
+    var role = currentUser ? currentUser.role : 'operator';
+    var adminOnlyMenus = document.querySelectorAll('[data-target="kategori"], [data-target="sub_kategori"], [data-target="panduan_admin"]');
+    adminOnlyMenus.forEach(function(el) {
+        el.style.display = (role === 'admin') ? '' : 'none';
+    });
 }
 
 // ==================================================================
-// NAVIGASI SPA
+// NAVIGASI SPA (role-aware)
 // ==================================================================
+function isAdmin() { return currentUser && currentUser.role === 'admin'; }
+
 function setupNavigation() {
     document.body.addEventListener('click', function(e) {
         var item = e.target.closest('.menu-item');
         if (!item) return;
         e.preventDefault();
+        var target = item.getAttribute('data-target');
+
+        // Blokir akses menu terlarang untuk operator
+        if (!isAdmin() && (target === 'kategori' || target === 'sub_kategori' || target === 'panduan_admin')) {
+            showNotif('error', 'Akses Ditolak', 'Menu ini hanya dapat diakses oleh Admin.');
+            return;
+        }
+
         document.querySelectorAll('.menu-item').forEach(function(el) { el.classList.remove('active'); });
         item.classList.add('active');
-        var target = item.getAttribute('data-target');
         if (window.innerWidth <= 768) { document.getElementById('mainSidebar').classList.remove('active'); document.getElementById('sidebarOverlay').classList.remove('active'); }
         var titleEl = document.getElementById('pageTitle');
         var mc = document.getElementById('mainContentArea');
@@ -113,6 +131,7 @@ function setupNavigation() {
         if (target === 'dashboard') { activeCategory = 'dashboard'; titleEl.innerText = 'Dashboard'; renderDashboard(mc); }
         else if (target === 'kategori') { activeCategory = 'kategori'; titleEl.innerText = 'Manajemen Kategori'; renderKategoriPage(mc); }
         else if (target === 'sub_kategori') { activeCategory = 'sub_kategori'; titleEl.innerText = 'Manajemen Sub-Kategori'; renderSubKategoriPage(mc); }
+        else if (target === 'panduan_admin') { activeCategory = 'panduan_admin'; titleEl.innerText = 'Kelola Panduan Menu'; renderPanduanAdminPage(mc); }
         else if (target === 'setting') { activeCategory = 'setting'; titleEl.innerText = 'Setting Sistem'; renderSettingPage(mc); }
         else if (target.startsWith('kat_')) {
             var katId = item.getAttribute('data-kat-id');
@@ -141,7 +160,8 @@ function renderDashboard(container) {
     }); }
 
     container.innerHTML =
-        '<div class="card" style="margin-bottom:25px; border-left:4px solid var(--primary-red); padding:20px 25px;"><div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;"><div style="width:55px; height:55px; background:var(--light-red); border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--primary-red); font-size:26px;"><i class="fa-solid fa-hands-clapping"></i></div><div style="flex:1; min-width:200px;"><h3 style="margin:0; font-size:18px;">Selamat Datang Kembali!</h3><p style="margin:4px 0 0; color:var(--text-muted); font-size:14px;">Ringkasan data arsip dan statistik database program studi.</p></div><button class="btn btn-secondary" onclick="preloadData()" style="white-space:nowrap;"><i class="fa-solid fa-rotate"></i> Refresh Data</button></div></div>' +
+        '<div class="card" style="margin-bottom:25px; border-left:4px solid var(--primary-red); padding:20px 25px;"><div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;"><div style="width:55px; height:55px; background:var(--light-red); border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--primary-red); font-size:26px;"><i class="fa-solid fa-hands-clapping"></i></div><div style="flex:1; min-width:200px;"><h3 style="margin:0; font-size:18px;">Selamat Datang di GRID!</h3><p style="margin:4px 0 0; color:var(--text-muted); font-size:14px;">Gerbang Repositori Informasi Data Prodi Pendidikan Matematika</p></div><button class="btn btn-secondary" onclick="preloadData()" style="white-space:nowrap;"><i class="fa-solid fa-rotate"></i> Refresh Data</button></div></div>' +
+
         '<div class="dash-cards-grid">' + cardsHtml + '</div>' +
         '<div class="dash-content-grid"><div class="card"><div class="card-header header-no-border"><div class="card-title"><i class="fa-solid fa-chart-column" style="margin-right:8px; color:var(--primary-red)"></i>Statistik Arsip</div></div><div style="position:relative; height:300px; width:100%;"><canvas id="myChart"></canvas></div></div><div class="card"><div class="card-header header-no-border"><div class="card-title"><i class="fa-solid fa-clock-rotate-left" style="margin-right:8px; color:var(--primary-red)"></i>Login Terakhir</div></div><div class="login-log" style="max-height:380px; overflow-y:auto; padding-right:4px;">' + logsHtml + '</div></div></div>';
 
@@ -171,7 +191,11 @@ function buildDataPageHtml(container, katId, katNama, subList, dataList) {
     for (var y = yr; y >= yr - 10; y--) yrOpt += '<option value="' + y + '">' + y + '</option>';
 
     container.innerHTML =
-        '<div class="card"><div class="card-header"><div class="card-title"><i class="fa-solid fa-database" style="margin-right:8px; color:var(--primary-red)"></i>Arsip ' + katNama + '</div><button class="btn btn-primary" onclick="openUploadModal(\'' + katId + '\', \'' + katNama + '\')"><i class="fa-solid fa-plus"></i> Tambah Arsip</button></div>' +
+        '<div class="card"><div class="card-header"><div class="card-title"><i class="fa-solid fa-database" style="margin-right:8px; color:var(--primary-red)"></i>Arsip ' + katNama + '</div>' +
+        '<div style="display:flex; gap:8px;">' +
+        '<button class="btn" style="background:var(--light-red); color:var(--primary-red); border:1px solid #f5c6cb;" onclick="openInfoModal(\'' + katId + '\', \'' + katNama + '\')"><i class="fa-solid fa-circle-info"></i> Panduan</button>' +
+        '<button class="btn btn-primary" onclick="openUploadModal(\'' + katId + '\', \'' + katNama + '\')"><i class="fa-solid fa-plus"></i> Tambah Arsip</button>' +
+        '</div></div>' +
         '<div class="filter-bar"><div class="form-group"><label><i class="fa-solid fa-calendar" style="margin-right:4px;"></i>Tahun:</label><select id="filterTahun" class="form-control" onchange="applyFilter()">' + yrOpt + '</select></div><div class="form-group"><label><i class="fa-solid fa-layer-group" style="margin-right:4px;"></i>Sub:</label><select id="filterSub" class="form-control" onchange="applyFilter()">' + subOpt + '</select></div><div style="flex:1"></div><button class="btn btn-success" onclick="doExportExcel(\'' + katId + '\')"><i class="fa-solid fa-file-excel"></i> Export Excel</button></div>' +
         '<div class="table-responsive"><table><thead><tr><th>Kode Arsip</th><th>Nama Arsip</th><th>Sub Kategori</th><th>Tipe File</th><th>Tgl Upload</th><th style="width:100px;">Aksi</th></tr></thead><tbody id="tableBody"></tbody></table></div></div>';
 
@@ -398,10 +422,34 @@ function confirmHapusSubKat(id, nama) {
 }
 
 // ==================================================================
-// SETTING — USER MANAGEMENT
+// SETTING — USER MANAGEMENT (role-aware)
 // ==================================================================
 function renderSettingPage(container) {
     container.innerHTML = '<div class="card"><div class="card-header"><div class="card-title"><i class="fa-solid fa-spinner fa-spin"></i> Memuat...</div></div></div>';
+    var isAdminUser = isAdmin();
+
+    if (!isAdminUser) {
+        // OPERATOR: hanya tampilkan form ubah password sendiri
+        var myId = currentUser ? currentUser.id : '';
+        var myUsername = currentUser ? currentUser.username : '';
+        container.innerHTML =
+            '<div class="card"><div class="card-header header-no-border"><div class="card-title"><i class="fa-solid fa-lock" style="margin-right:8px; color:var(--primary-red)"></i>Ubah Password Saya</div></div>' +
+            '<div style="max-width:420px; padding:10px 0;">' +
+            '<div style="background:var(--light-red); border-radius:10px; padding:14px 18px; margin-bottom:20px; display:flex; align-items:center; gap:12px;">' +
+            '<i class="fa-solid fa-circle-info" style="color:var(--primary-red); font-size:18px;"></i>' +
+            '<p style="font-size:13px; color:var(--primary-red); margin:0;">Sebagai <strong>Operator</strong>, Anda hanya dapat mengubah password akun Anda sendiri.</p>' +
+            '</div>' +
+            '<div class="form-group"><label><i class="fa-solid fa-user" style="margin-right:5px; color:var(--primary-red)"></i>Username</label>' +
+            '<input type="text" class="form-control" value="' + myUsername + '" disabled></div>' +
+            '<div class="form-group"><label for="opPwd"><i class="fa-solid fa-key" style="margin-right:5px; color:var(--primary-red)"></i>Password Baru</label>' +
+            '<input type="password" id="opPwd" class="form-control" placeholder="Masukkan password baru" autocomplete="new-password"></div>' +
+            '<button id="btnOpPwd" class="btn btn-primary" onclick="operatorUbahPassword(\'' + myId + '\')"><i class="fa-solid fa-check"></i> Simpan Password</button>' +
+            '</div></div>' +
+            '<div class="card"><div class="card-header header-no-border"><div class="card-title"><i class="fa-solid fa-info-circle" style="margin-right:8px; color:var(--primary-red)"></i>Informasi Sistem</div></div><div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:15px;"><div style="padding:15px; background:var(--bg-color); border-radius:8px;"><p style="font-size:12px; color:var(--text-muted); margin-bottom:5px;">Platform</p><p style="font-weight:600;">Google Apps Script</p></div><div style="padding:15px; background:var(--bg-color); border-radius:8px;"><p style="font-size:12px; color:var(--text-muted); margin-bottom:5px;">Database</p><p style="font-weight:600;">Google Sheets</p></div><div style="padding:15px; background:var(--bg-color); border-radius:8px;"><p style="font-size:12px; color:var(--text-muted); margin-bottom:5px;">Storage</p><p style="font-weight:600;">Google Drive</p></div><div style="padding:15px; background:var(--bg-color); border-radius:8px;"><p style="font-size:12px; color:var(--text-muted); margin-bottom:5px;">Total Kategori</p><p style="font-weight:600;">' + kategoriData.length + ' kategori</p></div></div></div>';
+        return;
+    }
+
+    // ADMIN: tampilkan lengkap
     google.script.run
         .withSuccessHandler(function(users) {
             var rows = '';
@@ -456,6 +504,119 @@ function confirmHapusUser(id, username) {
         '<i class="fa-solid fa-trash-can"></i> Ya, Hapus', '', function() {
             google.script.run.withSuccessHandler(function(r) { showNotif(r.success ? 'success' : 'error', r.success ? 'Dihapus!' : 'Gagal', r.message); if (r.success) renderSettingPage(document.getElementById('mainContentArea')); }).deleteUser(id);
         });
+}
+
+// ==================================================================
+// PANDUAN — Tampilkan Info ke User
+// ==================================================================
+function openInfoModal(katId, katNama) {
+    var panduan = CACHE.panduan[katId];
+    var titleEl = document.getElementById('infoModalTitle');
+    var katEl = document.getElementById('infoModalKatNama');
+    var bodyEl = document.getElementById('infoModalBody');
+    var emptyEl = document.getElementById('infoModalEmpty');
+    katEl.innerText = katNama;
+    if (panduan && panduan.isi && panduan.isi.trim()) {
+        titleEl.innerText = panduan.judul || 'Panduan Pengisian';
+        bodyEl.innerText = panduan.isi;
+        bodyEl.style.display = 'block';
+        emptyEl.style.display = 'none';
+    } else {
+        titleEl.innerText = 'Panduan Pengisian';
+        bodyEl.style.display = 'none';
+        emptyEl.style.display = 'block';
+    }
+    document.getElementById('infoModal').classList.add('active');
+}
+
+// ==================================================================
+// PANDUAN ADMIN — Kelola Panduan Per Kategori
+// ==================================================================
+function renderPanduanAdminPage(container) {
+    var rows = '';
+    if (kategoriData.length === 0) {
+        rows = '<tr><td colspan="4" style="text-align:center; padding:30px; color:var(--text-muted);">Belum ada kategori.</td></tr>';
+    } else {
+        kategoriData.forEach(function(kat, idx) {
+            var p = CACHE.panduan[kat.id];
+            var hasInfo = p && p.isi && p.isi.trim();
+            var badge = hasInfo
+                ? '<span class="badge badge-success"><i class="fa-solid fa-circle-check" style="margin-right:4px;"></i>Tersedia</span>'
+                : '<span class="badge badge-pdf"><i class="fa-solid fa-circle-xmark" style="margin-right:4px;"></i>Belum Ada</span>';
+            rows += '<tr><td>' + (idx + 1) + '</td>' +
+                '<td><i class="' + (kat.icon || 'fa-solid fa-folder') + '" style="margin-right:8px; color:var(--primary-red);"></i><strong>' + kat.nama + '</strong></td>' +
+                '<td>' + badge + '</td>' +
+                '<td><button class="btn-icon btn-edit" title="Edit Panduan" onclick="openEditPanduan(\'' + kat.id + '\', \'' + kat.nama.replace(/'/g, "\\'") + '\')"><i class="fa-solid fa-pen"></i></button></td></tr>';
+        });
+    }
+    container.innerHTML =
+        '<div class="card"><div class="card-header header-no-border">' +
+        '<div class="card-title"><i class="fa-solid fa-book-open" style="margin-right:8px; color:var(--primary-red)"></i>Kelola Panduan Per Menu</div></div>' +
+        '<div style="background:var(--light-red); border-radius:10px; padding:14px 18px; margin:0 20px 20px; display:flex; align-items:flex-start; gap:12px;">' +
+        '<i class="fa-solid fa-circle-info" style="color:var(--primary-red); font-size:18px; margin-top:2px;"></i>' +
+        '<p style="font-size:13px; color:var(--primary-red); margin:0;">Isi panduan akan tampil saat user mengklik tombol <strong>Panduan</strong> di setiap halaman data studi.</p></div>' +
+        '<div class="table-responsive"><table><thead><tr><th>No</th><th>Nama Menu</th><th>Status Panduan</th><th style="width:80px;">Aksi</th></tr></thead>' +
+        '<tbody>' + rows + '</tbody></table></div></div>';
+}
+
+function openEditPanduan(katId, katNama) {
+    var p = CACHE.panduan[katId];
+    document.getElementById('editPanduanKatId').value = katId;
+    document.getElementById('editPanduanKatNama').innerText = katNama;
+    document.getElementById('inputPanduanJudul').value = (p && p.judul) ? p.judul : '';
+    document.getElementById('inputPanduanIsi').value = (p && p.isi) ? p.isi : '';
+    document.getElementById('editPanduanModal').classList.add('active');
+}
+
+document.getElementById('editPanduanForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var btn = document.getElementById('btnSavePanduan');
+    var katId = document.getElementById('editPanduanKatId').value;
+    var judul = document.getElementById('inputPanduanJudul').value.trim();
+    var isi = document.getElementById('inputPanduanIsi').value.trim();
+    btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+    closeModal('editPanduanModal');
+    showLoading('Menyimpan panduan...');
+    google.script.run
+        .withSuccessHandler(function(r) {
+            hideLoading();
+            btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-check"></i> Simpan Panduan';
+            showNotif('success', 'Berhasil!', r.message);
+            preloadData(function() { renderPanduanAdminPage(document.getElementById('mainContentArea')); });
+        })
+        .withFailureHandler(function(err) {
+            hideLoading();
+            btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-check"></i> Simpan Panduan';
+            showNotif('error', 'Gagal', err.message);
+        })
+        .savePanduan(katId, judul, isi);
+});
+
+// ==================================================================
+// OPERATOR: Ubah Password Sendiri (tanpa modal)
+// ==================================================================
+function operatorUbahPassword(id) {
+    var pwdEl = document.getElementById('opPwd');
+    var btn = document.getElementById('btnOpPwd');
+    if (!pwdEl || !pwdEl.value.trim()) {
+        showNotif('error', 'Password Kosong', 'Masukkan password baru terlebih dahulu.');
+        return;
+    }
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+    google.script.run
+        .withSuccessHandler(function(r) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> Simpan Password';
+            showNotif('success', 'Berhasil!', r.message);
+            pwdEl.value = '';
+        })
+        .withFailureHandler(function(err) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> Simpan Password';
+            showNotif('error', 'Gagal', err.message);
+        })
+        .updateUserPassword(id, pwdEl.value);
 }
 
 // ==================================================================

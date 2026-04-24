@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DataProdi - Sistem Database Program Studi</title>
+    <title>GRID - Gerbang Repositori Informasi Data Prodi</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -21,9 +21,9 @@
         <div class="login-card glass">
             <div class="login-header">
                 <div style="width:60px; height:60px; background:linear-gradient(135deg, #C62828, #B71C1C); border-radius:14px; display:flex; align-items:center; justify-content:center; color:white; font-size:28px; margin:0 auto 15px;">
-                    <i class="fa-solid fa-graduation-cap"></i>
+                    <i class="fa-solid fa-table-cells" style="-webkit-text-stroke:1.5px white; color:transparent;"></i>
                 </div>
-                <h1>DataProdi</h1>
+                <h1>GRID</h1>
                 <p>Sistem Database Program Studi</p>
             </div>
             <div id="loginAlert" style="display:none; background:#ffebee; color:#c62828; padding:10px 15px; border-radius:8px; margin-bottom:15px; font-size:13px; text-align:center;">
@@ -42,7 +42,7 @@
                     <i class="fa-solid fa-right-to-bracket"></i> Masuk Sistem
                 </button>
             </form>
-            <p style="text-align:center; margin-top:20px; font-size:12px; color:#7f8c8d;">&copy; 2026 DataProdi</p>
+            <p style="text-align:center; margin-top:20px; font-size:12px; color:#7f8c8d;">&copy; 2026 GRID &mdash; Pendidikan Matematika</p>
         </div>
     </div>
 </div>
@@ -72,8 +72,8 @@
         <aside class="sidebar" id="mainSidebar">
             <div class="brand-area">
                 <div style="display:flex; align-items:center; gap:12px; flex:1;">
-                    <div class="brand-icon"><i class="fa-solid fa-graduation-cap"></i></div>
-                    <div class="brand-text"><h2 style="margin:0;">DataProdi</h2></div>
+                    <div class="brand-icon"><i class="fa-solid fa-table-cells" style="-webkit-text-stroke:1.2px white; color:transparent;"></i></div>
+                    <div class="brand-text"><h2 style="margin:0;">GRID</h2></div>
                 </div>
                 <button class="close-sidebar" onclick="toggleSidebar()"><i class="fa-solid fa-times"></i></button>
             </div>
@@ -90,6 +90,7 @@
                     <div class="menu-section-title">Pengaturan</div>
                     <a href="#" class="menu-item" data-target="kategori"><i class="fa-solid fa-folder-tree"></i> Kategori & Menu</a>
                     <a href="#" class="menu-item" data-target="sub_kategori"><i class="fa-solid fa-sitemap"></i> Sub-Kategori</a>
+                    <a href="#" class="menu-item" data-target="panduan_admin" id="menuPanduanAdmin"><i class="fa-solid fa-book-open"></i> Panduan Menu</a>
                     <a href="#" class="menu-item" data-target="setting"><i class="fa-solid fa-gear"></i> Setting Sistem</a>
                 </div>
             </div>
@@ -104,8 +105,8 @@
         <main class="main-content">
             <header class="mobile-header">
                 <div style="display:flex; align-items:center; gap:10px;">
-                    <div class="brand-icon" style="width:30px; height:30px; font-size:14px;"><i class="fa-solid fa-graduation-cap"></i></div>
-                    <h2 style="color:var(--primary-red); font-size:16px; margin:0;">DataProdi</h2>
+                    <div class="brand-icon" style="width:30px; height:30px; font-size:14px;"><i class="fa-solid fa-table-cells" style="-webkit-text-stroke:1px white; color:transparent;"></i></div>
+                    <h2 style="color:var(--primary-red); font-size:16px; margin:0;">GRID</h2>
                 </div>
                 <button class="mobile-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
             </header>
@@ -117,6 +118,63 @@
                  <div class="card"><div class="card-header"><div class="card-title"><i class="fa-solid fa-spinner fa-spin"></i> Memuat...</div></div></div>
             </div>
         </main>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- MODAL: Info Panduan (Tampilan untuk User)                     -->
+<!-- ============================================================ -->
+<div class="modal-overlay" id="infoModal">
+    <div class="modal-content" style="max-width:560px; padding:0; overflow:hidden;">
+        <div class="modal-header" style="background:linear-gradient(135deg,#1565c0,#0d47a1); color:white; padding:20px 25px; margin-bottom:0;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div style="width:40px; height:40px; background:rgba(255,255,255,0.2); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px;"><i class="fa-solid fa-circle-info"></i></div>
+                <div><h3 id="infoModalTitle" style="margin:0; font-size:16px;">Panduan Pengisian</h3><p id="infoModalKatNama" style="margin:0; font-size:12px; opacity:0.8;"></p></div>
+            </div>
+            <button class="modal-close" onclick="closeModal('infoModal')" style="color:white; opacity:0.8;">&times;</button>
+        </div>
+        <div style="padding:25px;">
+            <div id="infoModalBody" style="font-size:14px; color:var(--text-main); line-height:1.8; white-space:pre-wrap; min-height:80px;"></div>
+            <div id="infoModalEmpty" style="display:none; text-align:center; padding:30px 0; color:var(--text-muted);">
+                <i class="fa-solid fa-file-circle-question" style="font-size:40px; margin-bottom:12px; color:#ccc;"></i>
+                <p>Panduan untuk menu ini belum tersedia.</p>
+            </div>
+            <div style="text-align:right; margin-top:20px;">
+                <button class="btn btn-secondary" onclick="closeModal('infoModal')">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- MODAL: Edit Panduan (Hanya Admin)                            -->
+<!-- ============================================================ -->
+<div class="modal-overlay" id="editPanduanModal">
+    <div class="modal-content" style="max-width:600px; padding:0;">
+        <div class="modal-header" style="padding:25px 25px 0 25px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div class="modal-icon" style="background:var(--light-red); color:var(--primary-red);"><i class="fa-solid fa-book-open-reader"></i></div>
+                <div><h3 style="margin:0; font-size:16px;">Edit Panduan</h3><p id="editPanduanKatNama" style="margin:0; font-size:12px; color:var(--text-muted);"></p></div>
+            </div>
+            <button class="modal-close" onclick="closeModal('editPanduanModal')">&times;</button>
+        </div>
+        <form id="editPanduanForm" style="padding:25px;">
+            <input type="hidden" id="editPanduanKatId">
+            <div class="form-group">
+                <label for="inputPanduanJudul"><i class="fa-solid fa-heading" style="margin-right:5px; color:var(--primary-red)"></i>Judul Panduan</label>
+                <input type="text" id="inputPanduanJudul" class="form-control" placeholder="Contoh: Tata Cara Pengisian Data Mahasiswa" required>
+            </div>
+            <div class="form-group">
+                <label for="inputPanduanIsi"><i class="fa-solid fa-align-left" style="margin-right:5px; color:var(--primary-red)"></i>Isi Panduan</label>
+                <textarea id="inputPanduanIsi" class="form-control" rows="8" placeholder="Tulis instruksi langkah demi langkah untuk pengisian data pada menu ini..."
+                    style="resize:vertical; font-family:inherit; line-height:1.7;"></textarea>
+                <small style="color:var(--text-muted); font-size:11px;"><i class="fa-solid fa-lightbulb" style="color:#f39c12;"></i> Tips: Tekan Enter untuk baris baru. Gunakan angka (1. 2. 3.) atau strip (-) untuk membuat daftar.</small>
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:5px;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('editPanduanModal')">Batal</button>
+                <button type="submit" id="btnSavePanduan" class="btn btn-primary"><i class="fa-solid fa-check"></i> Simpan Panduan</button>
+            </div>
+        </form>
     </div>
 </div>
 
