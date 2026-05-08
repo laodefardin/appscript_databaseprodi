@@ -831,6 +831,14 @@
             document.getElementById('btnLogin').innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Masuk Sistem';
             showSlides(slideIndex);
             startSlider();
+
+            // Ambil pengaturan sistem khusus untuk halaman login agar dinamis
+            google.script.run.withSuccessHandler(function(s) {
+                if (typeof CACHE !== 'undefined') {
+                    CACHE.settings = s;
+                    if (typeof applySystemSettings === 'function') applySystemSettings();
+                }
+            }).getSystemSettings();
         }
         // checkSession dipanggil dari app_js.html setelah semua fungsi terdefinisi
         function checkSession() {
