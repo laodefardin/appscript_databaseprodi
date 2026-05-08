@@ -50,34 +50,34 @@
                         </div>
                         <p style="margin:0; font-size:16px; color:var(--text-main); font-weight:500;">Selamat datang di
                         </p>
-                        <!-- CUSTOM SVG LOGO (STYLE MYUT) -->
+                        <!-- CUSTOM SVG LOGO (MODERN RED-ORANGE) -->
                         <svg class="grid-logo-svg" width="240" height="75" viewBox="0 0 240 75" xmlns="http://www.w3.org/2000/svg" style="margin: 0 auto; display: block; overflow: visible;">
                             <defs>
-                                <linearGradient id="ut_paint1" x1="0%" y1="0%" x2="0%" y2="100%">
-                                    <stop offset="0%" stop-color="#30CFD0" />
-                                    <stop offset="100%" stop-color="#330867" />
+                                <linearGradient id="grid_base" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" stop-color="#FF5252" />
+                                    <stop offset="100%" stop-color="#B71C1C" />
                                 </linearGradient>
-                                <linearGradient id="ut_paint2" x1="0%" y1="100%" x2="100%" y2="0%">
-                                    <stop offset="0%" stop-color="#FF5858" />
-                                    <stop offset="100%" stop-color="#F09819" />
+                                <linearGradient id="grid_fold" x1="0%" y1="100%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="#FFD180" />
+                                    <stop offset="100%" stop-color="#FF6D00" />
                                 </linearGradient>
                                 <clipPath id="ribbonClip">
-                                    <path d="M0,75 Q 60,20 120,55 T 240,30 L 240,75 L 0,75 Z" />
+                                    <path d="M-130,25 L130,25 L130,-15 Q 0,-45 -130,-10 Z" />
                                 </clipPath>
                             </defs>
 
                             <g transform="translate(120, 58)">
-                                <!-- Shadow -->
-                                <text x="2" y="3" font-family="'Nunito', 'Arial Rounded MT Bold', 'Segoe UI Black', sans-serif" font-weight="900" font-size="68" text-anchor="middle" letter-spacing="-2" fill="rgba(0,0,0,0.12)">GRID</text>
+                                <!-- Soft Shadow -->
+                                <text x="2" y="3" font-family="'Nunito', 'Arial Rounded MT Bold', 'Segoe UI Black', sans-serif" font-weight="900" font-size="68" text-anchor="middle" letter-spacing="-2" fill="rgba(183, 28, 28, 0.2)">GRID</text>
                                 
-                                <!-- Base Blue/Purple Text -->
-                                <text class="dynamic-app-name" x="0" y="0" font-family="'Nunito', 'Arial Rounded MT Bold', 'Segoe UI Black', sans-serif" font-weight="900" font-size="68" text-anchor="middle" letter-spacing="-2" fill="url(#ut_paint1)">GRID</text>
+                                <!-- Base Red Text -->
+                                <text class="dynamic-app-name" x="0" y="0" font-family="'Nunito', 'Arial Rounded MT Bold', 'Segoe UI Black', sans-serif" font-weight="900" font-size="68" text-anchor="middle" letter-spacing="-2" fill="url(#grid_base)">GRID</text>
                                 
-                                <!-- Overlapping Orange/Red Fold -->
-                                <text class="dynamic-app-name" x="0" y="0" font-family="'Nunito', 'Arial Rounded MT Bold', 'Segoe UI Black', sans-serif" font-weight="900" font-size="68" text-anchor="middle" letter-spacing="-2" fill="url(#ut_paint2)" clip-path="url(#ribbonClip)">GRID</text>
+                                <!-- Overlapping Orange/Yellow Fold -->
+                                <text class="dynamic-app-name" x="0" y="0" font-family="'Nunito', 'Arial Rounded MT Bold', 'Segoe UI Black', sans-serif" font-weight="900" font-size="68" text-anchor="middle" letter-spacing="-2" fill="url(#grid_fold)" clip-path="url(#ribbonClip)">GRID</text>
                                 
-                                <!-- Inner White Accent line for depth -->
-                                <text class="dynamic-app-name" x="0" y="-1" font-family="'Nunito', 'Arial Rounded MT Bold', 'Segoe UI Black', sans-serif" font-weight="900" font-size="68" text-anchor="middle" letter-spacing="-2" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-opacity="0.4" clip-path="url(#ribbonClip)">GRID</text>
+                                <!-- Inner Accent line for glassy edge -->
+                                <text class="dynamic-app-name" x="0" y="-1.5" font-family="'Nunito', 'Arial Rounded MT Bold', 'Segoe UI Black', sans-serif" font-weight="900" font-size="68" text-anchor="middle" letter-spacing="-2" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-opacity="0.45" clip-path="url(#ribbonClip)">GRID</text>
                             </g>
                         </svg>
                         <div
