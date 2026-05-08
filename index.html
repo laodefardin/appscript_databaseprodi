@@ -19,180 +19,212 @@
     <!-- TAMPILAN LOGIN                                                -->
     <div id="loginView">
         <div class="login-split-container">
-
-            <!-- ═══════════════════════════════════════════════ -->
-            <!-- KIRI: Form Login                                -->
-            <!-- ═══════════════════════════════════════════════ -->
-            <div class="login-left" style="position:relative; overflow:hidden;">
-
-                <!-- Dekorasi blob bawah kiri -->
-                <svg viewBox="0 0 838 160" fill="none" xmlns="http://www.w3.org/2000/svg"
-                    style="position:absolute; bottom:0; left:0; width:100%; z-index:0; pointer-events:none;">
-                    <path d="M754.749 43.423c36.125 6.648 82.523 30.49 82.411 60.407l.011 35.588a7 7 0 01-7.08 7.002l-848.143-9.64a7 7 0 01-6.92-6.998l-.033-106.625c-.002-6.753 10.676-11.495 16.438-7.973 40.919 25.004 136.183 55.03 160.615 55.121 91.939.345 122.903-82.089 235.857-68.29C506.3 16.475 513.244 87.436 600.067 90.984c80.573 3.292 68.82-63.362 154.682-47.562z"
-                        fill="#FFCDD2" fill-opacity="0.35"/>
+            <!-- Kolom Kiri: Form Login -->
+            <div class="login-left">
+                <svg viewBox="0 0 838 137" fill="none" xmlns="http://www.w3.org/2000/svg"
+                    style="position: absolute; bottom: 0; left: 0; width: 100%; z-index: 0;">
+                    <path
+                        d="M754.749 43.423c36.125 6.648 82.523 30.49 82.411 60.407l.011 35.588a7 7 0 01-7.08 7.002l-848.143-9.64a7 7 0 01-6.92-6.998l-.033-106.625c-.002-6.753 10.676-11.495 16.438-7.973 40.919 25.004 136.183 55.03 160.615 55.121 91.939.345 122.903-82.089 235.857-68.29C506.3 16.475 513.244 87.436 600.067 90.984c80.573 3.292 68.82-63.362 154.682-47.562z"
+                        fill="url(#paint0_linear_red)"></path>
+                    <defs>
+                        <linearGradient id="paint0_linear_red" x1="406" y1="73" x2="406" y2="292"
+                            gradientUnits="userSpaceOnUse">
+                            <stop stop-color="#C62828" stop-opacity=".15"></stop>
+                            <stop offset="1" stop-color="#B71C1C" stop-opacity=".3"></stop>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <svg viewBox="0 0 687 184" fill="none" xmlns="http://www.w3.org/2000/svg"
+                    style="position: absolute; bottom: 0; left: 0; width: 100%; z-index: 1;">
+                    <path
+                        d="M606.357 88.707c34.993 6.943 79.933 31.867 79.816 63.161V189.5a7 7 0 01-7 7H-71.423a7 7 0 01-7-7V65.15c0-6.882 9.838-10.317 14.979-5.743 19.14 17.031 44.808 26.956 66.5 27.038 89.064.334 93.415-98.422 202.832-84.022 114.687 15.093 109.934 136.163 194.04 139.849 78.051 3.42 123.258-70.067 206.429-53.565z"
+                        fill="#FFCDD2" fill-opacity=".4"></path>
                 </svg>
 
-                <!-- Konten form -->
-                <div class="login-card-new" style="position:relative; z-index:10;">
+                <div class="login-card-new" style="position: relative; z-index: 10;">
+                    <div class="login-header" style="text-align:center; margin-bottom:25px;">
+                        <!-- Logo Gambar GRID -->
+                        <img id="gridLogoImg"
+                            src="https://i.ibb.co.com/1t9FjtPL/Presentasi-Seminar-Proposal-Modern-Minimalis-Biru-Putih-1.png"
+                            alt="GRID Logo"
+                            style="width:200px; height:auto; display:block; margin:0 auto 10px; border-radius:10px;"
+                            onerror="this.style.display='none'; document.getElementById('gridLogoFallback').style.display='block';">
 
-                    <!-- Header / Logo -->
-                    <div style="text-align:center; margin-bottom:24px;">
-                        <!-- Ikon kotak merah -->
-                        <div style="width:56px; height:56px; background:linear-gradient(135deg,#C62828,#8B0000); border-radius:14px; display:flex; align-items:center; justify-content:center; margin:0 auto 12px; box-shadow:0 6px 18px rgba(198,40,40,0.30);">
-                            <i class="fa-solid fa-table-cells" style="font-size:26px; color:white;"></i>
+                        <!-- Fallback SVG jika gambar gagal load -->
+                        <div id="gridLogoFallback" style="display:none;">
+                            <div style="width:56px; height:56px; background:linear-gradient(135deg,#C62828,#8B0000); border-radius:14px; display:flex; align-items:center; justify-content:center; margin:0 auto 10px; box-shadow:0 6px 18px rgba(198,40,40,0.28);">
+                                <i class="fa-solid fa-table-cells" style="font-size:26px; color:white;"></i>
+                            </div>
+                            <p style="margin:0 0 4px; font-size:14px; color:#888; font-weight:500;">Selamat datang di</p>
+                            <svg width="220" height="68" viewBox="0 0 240 75" xmlns="http://www.w3.org/2000/svg"
+                                style="display:block; margin:0 auto; overflow:visible;">
+                                <defs>
+                                    <linearGradient id="grid_full_gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stop-color="#FF5252"/>
+                                        <stop offset="100%" stop-color="#8E0000"/>
+                                    </linearGradient>
+                                </defs>
+                                <g transform="translate(120,58)">
+                                    <text x="3" y="3" font-family="'Arial Black',sans-serif" font-weight="900"
+                                        font-size="68" text-anchor="middle" fill="#FFCDD2" letter-spacing="-2">GRID</text>
+                                    <text class="dynamic-app-name" x="0" y="0" font-family="'Arial Black',sans-serif"
+                                        font-weight="900" font-size="68" text-anchor="middle"
+                                        fill="url(#grid_full_gradient)" letter-spacing="-2">GRID</text>
+                                </g>
+                            </svg>
                         </div>
 
-                        <p style="margin:0 0 4px; font-size:14px; color:#888; font-weight:500; letter-spacing:0.3px;">Selamat datang di</p>
-
-                        <!-- Logo SVG GRID -->
-                        <svg width="220" height="68" viewBox="0 0 240 75" xmlns="http://www.w3.org/2000/svg"
-                            style="display:block; margin:0 auto; overflow:visible;">
-                            <defs>
-                                <linearGradient id="grid_grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" stop-color="#FF5252"/>
-                                    <stop offset="100%" stop-color="#8E0000"/>
-                                </linearGradient>
-                            </defs>
-                            <g transform="translate(120,58)">
-                                <text x="3" y="3" font-family="'Arial Black','Segoe UI Black',sans-serif"
-                                    font-weight="900" font-size="68" text-anchor="middle"
-                                    fill="#FFCDD2" letter-spacing="-2">GRID</text>
-                                <text class="dynamic-app-name" x="0" y="0"
-                                    font-family="'Arial Black','Segoe UI Black',sans-serif"
-                                    font-weight="900" font-size="68" text-anchor="middle"
-                                    fill="url(#grid_grad)" letter-spacing="-2">GRID</text>
-                            </g>
-                        </svg>
-
                         <!-- Badge subtext -->
-                        <div style="display:inline-block; margin-top:6px; padding:6px 18px; background:linear-gradient(135deg,#C62828,#8B0000); border-radius:30px; box-shadow:0 4px 14px rgba(198,40,40,0.32);">
+                        <div style="display:inline-block; margin-top:8px; padding:6px 18px; background:linear-gradient(135deg,#C62828,#8B0000); border-radius:30px; box-shadow:0 4px 14px rgba(198,40,40,0.32);">
                             <span id="dynamicLoginSubtext" style="color:white; font-size:12.5px; font-weight:700; line-height:1.4;">
                                 <i class="fa-solid fa-circle-notch fa-spin"></i> Memuat...
                             </span>
                         </div>
-
-                        <hr style="width:50px; margin:20px auto 0; border:none; border-top:2px solid #eeeeee;">
+                        <hr style="width:60px; margin:20px auto; border:none; border-top:2px solid #e0e0e0;">
                     </div>
 
-                    <!-- Alert -->
-                    <div id="loginAlert" style="display:none; background:#ffebee; color:#c62828; padding:10px 14px; border-radius:8px; margin-bottom:14px; font-size:13px; text-align:center;">
-                        <i class="fa-solid fa-circle-exclamation"></i>
-                        <span id="loginAlertText"></span>
+                    <div id="loginAlert"
+                        style="display:none; background:#ffebee; color:#c62828; padding:10px 15px; border-radius:8px; margin-bottom:15px; font-size:13px; text-align:center;">
+                        <i class="fa-solid fa-circle-exclamation"></i> <span id="loginAlertText"></span>
                     </div>
 
-                    <!-- Form -->
                     <form id="loginForm">
-                        <div style="margin-bottom:13px;">
+                        <div class="form-group" style="margin-bottom:15px;">
                             <input type="text" id="username" class="form-control" placeholder="Masukkan Username"
                                 required autocomplete="username"
-                                style="width:100%; padding:13px 15px; background:#f7f8fc; border:1.5px solid #e8eaf0; border-radius:10px; font-size:14px; box-sizing:border-box; transition:border-color 0.2s, box-shadow 0.2s;"
-                                onfocus="this.style.borderColor='#C62828';this.style.boxShadow='0 0 0 3px rgba(198,40,40,0.10)';"
-                                onblur="this.style.borderColor='#e8eaf0';this.style.boxShadow='none';">
+                                style="background:#f5f6fa; border:1px solid #e0e0e0; padding:15px; border-radius:6px;">
                         </div>
-                        <div style="margin-bottom:16px;">
+                        <div class="form-group" style="margin-bottom:15px;">
                             <input type="password" id="password" class="form-control" placeholder="Masukkan Password"
                                 required autocomplete="current-password"
-                                style="width:100%; padding:13px 15px; background:#f7f8fc; border:1.5px solid #e8eaf0; border-radius:10px; font-size:14px; box-sizing:border-box; transition:border-color 0.2s, box-shadow 0.2s;"
-                                onfocus="this.style.borderColor='#C62828';this.style.boxShadow='0 0 0 3px rgba(198,40,40,0.10)';"
-                                onblur="this.style.borderColor='#e8eaf0';this.style.boxShadow='none';">
+                                style="background:#f5f6fa; border:1px solid #e0e0e0; padding:15px; border-radius:6px;">
                         </div>
-                        <button type="submit" id="btnLogin"
-                            style="width:100%; height:48px; font-size:15px; font-weight:700; background:white; color:#C62828; border:2px solid #C62828; border-radius:10px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:all 0.25s;"
-                            onmouseover="this.style.background='#C62828';this.style.color='white';this.style.boxShadow='0 6px 18px rgba(198,40,40,0.30)';"
-                            onmouseout="this.style.background='white';this.style.color='#C62828';this.style.boxShadow='none';">
-                            <i class="fa-solid fa-right-to-bracket"></i> Masuk Sistem
+                        <button type="submit" id="btnLogin" class="btn"
+                            style="width: 100%; margin-top: 5px; height:48px; font-size:15px; background:white; color:var(--primary-red); border:2px solid var(--primary-red); font-weight:700; border-radius:6px; transition:0.3s;"
+                            onmouseover="this.style.background='var(--primary-red)'; this.style.color='white';"
+                            onmouseout="this.style.background='white'; this.style.color='var(--primary-red)';">
+                            Masuk
                         </button>
                     </form>
 
-                    <!-- Link & Footer -->
-                    <div style="text-align:center; margin-top:16px;">
+                    <div class="login-links" style="margin-top:20px; font-size:13px; text-align:center;">
                         <a href="#"
                             onclick="renderModalApaItuGRID(); document.getElementById('modalApaItuGRID').classList.add('active'); return false;"
-                            class="dynamic-app-name-link"
-                            style="color:#C62828; font-size:13px; font-weight:600; text-decoration:none;">
-                            Apa itu GRID?
-                        </a>
+                            style="color:var(--primary-red); text-decoration:none; display:block; padding:10px; font-weight:600;"
+                            class="dynamic-app-name-link">Apa itu GRID?</a>
                     </div>
-                    <p id="dynamicFooterText" style="text-align:center; margin-top:24px; font-size:11.5px; color:#bbb;">
-                        &copy; 2026 GRID &mdash; Pendidikan Matematika
-                    </p>
+
+                    <p id="dynamicFooterText"
+                        style="text-align:center; margin-top:30px; font-size:12px; color:#7f8c8d;">&copy; 2026 GRID
+                        &mdash; Pendidikan Matematika</p>
                 </div>
             </div>
 
-            <!-- ═══════════════════════════════════════════════ -->
-            <!-- KANAN: Pita S-Curve Merah + Foto               -->
-            <!-- ═══════════════════════════════════════════════ -->
-            <div class="login-right" style="position:relative; overflow:hidden; background:#fff;">
-                <div style="position:absolute; inset:0;">
+            <!-- Kolom Kanan: Gambar Slider -->
+            <div class="login-right" style="position: relative; overflow: visible; background: #fff; z-index: 2;">
+                <div style="position: absolute; right: 0; top: 0; height: 100%; width: 100%;">
 
+                    <!-- Combined SVG — Modern Redesign -->
                     <svg viewBox="-40 0 856 720" fill="none" xmlns="http://www.w3.org/2000/svg"
                         xmlns:xlink="http://www.w3.org/1999/xlink" preserveAspectRatio="xMinYMid slice"
-                        style="position:absolute; left:-40px; top:0; height:100%; width:calc(100% + 40px); z-index:1;">
+                        style="position: absolute; left: -40px; top: 0; height: 100%; width: calc(100% + 40px); z-index: 1;">
                         <defs>
-                            <!-- Clip: foto muncul di kanan pita -->
-                            <clipPath id="photoClipRight">
-                                <path d="M258 0 C218 140 334 295 264 465 C204 618 148 665 168 720 H860 V0 Z"/>
-                            </clipPath>
+                            <!-- Deep gradient: dark bottom-left to vivid top-right -->
+                            <linearGradient id="wg_main" x1="0%" y1="100%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="#4A0000" />
+                                <stop offset="35%" stop-color="#8B0000" />
+                                <stop offset="70%" stop-color="#C62828" />
+                                <stop offset="100%" stop-color="#EF5350" />
+                            </linearGradient>
+
+                            <!-- Accent strip gradient -->
+                            <linearGradient id="wg_accent" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stop-color="#FF8A80" stop-opacity="0.55" />
+                                <stop offset="50%" stop-color="#E53935" stop-opacity="0.30" />
+                                <stop offset="100%" stop-color="#B71C1C" stop-opacity="0.10" />
+                            </linearGradient>
+
+                            <!-- Glow overlay -->
+                            <radialGradient id="wg_glow" cx="60%" cy="35%" r="55%">
+                                <stop offset="0%" stop-color="#FF5252" stop-opacity="0.30" />
+                                <stop offset="100%" stop-color="#7A0000" stop-opacity="0" />
+                            </radialGradient>
+
+                            <!-- Shimmer lines gradient -->
+                            <linearGradient id="wg_shimmer" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#ffffff" stop-opacity="0" />
+                                <stop offset="45%" stop-color="#ffffff" stop-opacity="0.07" />
+                                <stop offset="55%" stop-color="#ffffff" stop-opacity="0.12" />
+                                <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+                            </linearGradient>
+
+                            <!-- Image mask: smooth modern curve -->
+                            <mask id="shapeMask" maskUnits="userSpaceOnUse" x="-300" y="-100" width="1500" height="900">
+                                <path transform="translate(80, 0)"
+                                    d="M120.385 98.2299C133.726 44.8781 242.751 1 242.751 1H856V720.966H223.97C223.97 720.966 129.713 724.172 133.726 668.116C141.972 552.941 12.3763 606.454 1.45675 479.5C-8.62119 362.331 151.504 333.569 143.006 252.142C136.666 191.396 107.044 151.582 120.385 98.2299Z"
+                                    fill="white" />
+                            </mask>
                         </defs>
 
-                        <!-- Latar putih -->
-                        <rect x="-40" y="0" width="900" height="720" fill="white"/>
+                        <!-- ── Layer 1: Main solid background fill (deep gradient) ── -->
+                        <path d="M96.52 57.338C104.253 23.932 137.596 0 137.596 0h750v720H29.985
+                                 s64.886-19.902 74.267-75.291
+                                 C112.951 593.351-7.374 550.969.358 462.216
+                                 c10.21-117.214 195.333-136.854 165.748-212.91
+                                 -28.511-73.297-84.428-127.835-69.585-191.968z" fill="url(#wg_main)" />
 
-                        <!-- Blob pink dekoratif pojok kiri bawah -->
-                        <circle cx="-5"  cy="720" r="115" fill="#FFCDD2" fill-opacity="0.58"/>
-                        <circle cx="32"  cy="638" r="68"  fill="#EF9A9A" fill-opacity="0.30"/>
-                        <!-- Blob pojok kiri atas -->
-                        <circle cx="-25" cy="18"  r="52"  fill="#FFCDD2" fill-opacity="0.18"/>
+                        <!-- ── Layer 2: Smooth secondary wave (lighter red, offset) ── -->
+                        <path d="M210 0 C160 60 240 150 200 280 C160 410 60 430 80 560
+                                  C100 670 160 700 180 720 H856 V0 Z" fill="#C62828" fill-opacity="0.55" />
 
-                        <!-- Foto (dikliping ke sisi kanan ribbon) -->
-                        <image class="slide-img fade" id="slide-img-1"
-                            href="https://srscdn1.blob.core.windows.net/asset-srs/assets-sia/static/login-page/slide-2-min.png"
-                            x="185" y="0" width="715" height="720" preserveAspectRatio="xMidYMid slice"
-                            clip-path="url(#photoClipRight)" style="display:block;"/>
-                        <image class="slide-img fade" id="slide-img-2"
-                            href="https://srscdn1.blob.core.windows.net/asset-srs/assets-sia/static/login-page/slide-3-min.png"
-                            x="185" y="0" width="715" height="720" preserveAspectRatio="xMidYMid slice"
-                            clip-path="url(#photoClipRight)" style="display:none;"/>
-                        <image class="slide-img fade" id="slide-img-3"
-                            href="https://srscdn1.blob.core.windows.net/asset-srs/assets-sia/static/login-page/slide-1-min.png"
-                            x="185" y="0" width="715" height="720" preserveAspectRatio="xMidYMid slice"
-                            clip-path="url(#photoClipRight)" style="display:none;"/>
+                        <!-- ── Layer 3: Soft accent curve on leading edge ── -->
+                        <path d="M130 0 C80 80 170 180 140 310 C110 430 20 460 40 580
+                                  C55 670 110 710 130 720 H260 C200 680 155 640 145 580
+                                  C120 460 230 430 250 310 C270 190 190 90 220 0 Z" fill="url(#wg_accent)" />
 
-                        <!-- Pita S-Curve Layer 1 — pink lembut (belakang) -->
-                        <path d="M112 0 C70 158 196 308 130 480 C74 628 22 670 44 720
-                                 L134 720 C112 670 163 628 218 480 C284 308 158 158 200 0 Z"
-                            fill="#EF9A9A" fill-opacity="0.45"/>
+                        <!-- ── Layer 4: Radial glow over entire panel ── -->
+                        <rect x="-40" y="0" width="896" height="720" fill="url(#wg_glow)" />
 
-                        <!-- Pita S-Curve Layer 2 — merah cerah -->
-                        <path d="M154 0 C112 158 238 308 172 480 C116 628 64 670 86 720
-                                 L174 720 C152 670 203 628 258 480 C324 308 198 158 240 0 Z"
-                            fill="#C62828"/>
+                        <!-- ── Layer 5: Diagonal shimmer lines (premium glass feel) ── -->
+                        <line x1="300" y1="-20" x2="900" y2="580" stroke="white" stroke-width="60"
+                            stroke-opacity="0.04" />
+                        <line x1="200" y1="-20" x2="800" y2="580" stroke="white" stroke-width="30"
+                            stroke-opacity="0.06" />
+                        <line x1="450" y1="-20" x2="900" y2="430" stroke="white" stroke-width="20"
+                            stroke-opacity="0.04" />
 
-                        <!-- Pita S-Curve Layer 3 — merah gelap -->
-                        <path d="M193 0 C151 158 277 308 211 480 C155 628 103 670 125 720
-                                 L211 720 C189 670 240 628 295 480 C361 308 235 158 277 0 Z"
-                            fill="#8B0000"/>
-
-                        <!-- Pita S-Curve Layer 4 — sangat gelap (depan) -->
-                        <path d="M230 0 C188 158 314 308 248 480 C192 628 140 670 162 720
-                                 H244 C222 670 273 628 328 480 C394 308 268 158 310 0 Z"
-                            fill="#5C0000"/>
+                        <!-- ── Images masked by smooth modern curve ── -->
+                        <g mask="url(#shapeMask)">
+                            <g transform="translate(80, 0)">
+                                <image class="slide-img fade" id="slide-img-1"
+                                    href="https://srscdn1.blob.core.windows.net/asset-srs/assets-sia/static/login-page/slide-2-min.png"
+                                    x="-100" y="0" width="900" height="720" preserveAspectRatio="xMidYMid slice"
+                                    style="display:block;" />
+                                <image class="slide-img fade" id="slide-img-2"
+                                    href="https://srscdn1.blob.core.windows.net/asset-srs/assets-sia/static/login-page/slide-3-min.png"
+                                    x="-100" y="0" width="900" height="720" preserveAspectRatio="xMidYMid slice"
+                                    style="display:none;" />
+                                <image class="slide-img fade" id="slide-img-3"
+                                    href="https://srscdn1.blob.core.windows.net/asset-srs/assets-sia/static/login-page/slide-1-min.png"
+                                    x="-100" y="0" width="900" height="720" preserveAspectRatio="xMidYMid slice"
+                                    style="display:none;" />
+                            </g>
+                        </g>
                     </svg>
 
-                    <!-- Hidden slides agar JS slider tetap bekerja -->
+                    <!-- Hidden slides (keep JS working) -->
                     <div class="slide" style="display:block;" data-slide="1"></div>
-                    <div class="slide" style="display:none;"  data-slide="2"></div>
-                    <div class="slide" style="display:none;"  data-slide="3"></div>
+                    <div class="slide" style="display:none;" data-slide="2"></div>
+                    <div class="slide" style="display:none;" data-slide="3"></div>
 
-                    <!-- Dots slider -->
-                    <div style="position:absolute; bottom:28px; left:0; width:100%; display:flex; justify-content:center; gap:8px; z-index:10;">
+                    <div class="slider-dots"
+                        style="position: absolute; bottom: 30px; left: 0; width: 100%; display: flex; justify-content: center; gap: 8px; z-index: 10;">
                         <span class="dot active" onclick="currentSlide(1)"></span>
                         <span class="dot" onclick="currentSlide(2)"></span>
                         <span class="dot" onclick="currentSlide(3)"></span>
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
 
