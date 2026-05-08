@@ -1,6 +1,5 @@
-<script>
 // ============================================================
-// app_js.html â€” Client-Side JavaScript
+// app_js.html Ã¢â‚¬â€ Client-Side JavaScript
 // ============================================================
 
 var kategoriData = [];
@@ -53,9 +52,7 @@ function preloadData(afterLoad) {
                 CACHE.counts = result.counts || {};
                 CACHE.loginLogs = result.loginLogs || [];
                 CACHE.panduan = result.panduan || {};
-                CACHE.settings = result.settings || {};
                 CACHE.loaded = true;
-                applySystemSettings();
                 renderMenu();
                 if (typeof afterLoad === 'function') {
                     afterLoad();
@@ -106,14 +103,6 @@ function katBolehDiakses(kat) {
     return false;
 }
 
-// Cek apakah role saat ini boleh menambah/menghapus arsip pada kategori tersebut
-function canEditArsip(katKode) {
-    if (isAdmin() || isDosen() || isOperator()) return true;
-    if (isMahasiswa() && katKode === 'MHS') return true;
-    if (isAlumni() && katKode === 'ALU') return true;
-    return false;
-}
-
 // ==================================================================
 // MENU DINAMIS (role-aware)
 // ==================================================================
@@ -132,7 +121,7 @@ function renderMenu() {
     if (pengaturanSection) pengaturanSection.style.display = isPengaturanHidden() ? 'none' : '';
 
     // Sembunyikan menu admin-only
-    var adminOnly = ['kategori','sub_kategori','panduan_admin','kelola_dosen','pengaturan_aplikasi'];
+    var adminOnly = ['kategori','sub_kategori','panduan_admin','kelola_dosen'];
     adminOnly.forEach(function(t) {
         var el = document.querySelector('[data-target="' + t + '"]');
         if (el) el.style.display = isAdmin() ? '' : 'none';
@@ -147,53 +136,6 @@ function renderMenu() {
     if (roleLabel) roleLabel.innerText = getRole();
 }
 
-function applySystemSettings() {
-    var s = CACHE.settings || {};
-    var appName = s.app_name || 'GRID';
-    var dTitle = s.welcome_title || 'Selamat Datang di GRID!';
-    var dSub = s.welcome_subtext || 'Gerbang Repositori Informasi Data Prodi Pendidikan Matematika';
-    var faviconUrl = s.app_favicon || 'https://cdn-icons-png.flaticon.com/512/5132/5132142.png';
-    var loginSub = s.login_subtext || 'Sistem Database Program Studi';
-    var fText = s.footer_text || 'Pendidikan Matematika';
-
-    var titleEl = document.getElementById('dynamicPageTitle');
-    if (titleEl) titleEl.innerText = appName + ' - ' + dSub;
-    else document.title = appName + ' - ' + dSub;
-
-    var favEl = document.getElementById('dynamicFavicon');
-    if (favEl) favEl.href = faviconUrl;
-
-    var logSubEl = document.getElementById('dynamicLoginSubtext');
-    if (logSubEl) {
-        // Pisahkan teks di kata "Prodi" agar tampil 2 baris
-        var splitIdx = loginSub.indexOf('Prodi');
-        var line1, line2;
-        if (splitIdx > 0) {
-            line1 = loginSub.substring(0, splitIdx).trim();
-            line2 = loginSub.substring(splitIdx).trim();
-            logSubEl.innerHTML = line1 + '<br>' + line2;
-        } else {
-            logSubEl.innerText = loginSub;
-        }
-    }
-
-    var ftEl = document.getElementById('dynamicFooterText');
-    if (ftEl) ftEl.innerHTML = '&copy; ' + new Date().getFullYear() + ' ' + appName + ' &mdash; ' + fText;
-
-    document.querySelectorAll('.dynamic-app-name').forEach(function(el){ el.textContent = appName; });
-    CACHE.welcomeTitle = dTitle;
-    CACHE.welcomeSubtext = dSub;
-
-    // Update modal header
-    var mTitle = document.getElementById('modalGridTitle');
-    if (mTitle) mTitle.innerText = 'Apa itu ' + appName + '?';
-    var mSub = document.getElementById('modalGridSubtitle');
-    if (mSub) mSub.innerText = loginSub;
-
-    // Render dynamic modal body
-    renderModalApaItuGRID();
-}
-
 // ==================================================================
 // NAVIGASI SPA (role-aware)
 // ==================================================================
@@ -205,7 +147,7 @@ function setupNavigation() {
         var target = item.getAttribute('data-target');
 
         // Blokir menu pengaturan untuk mahasiswa/alumni
-        var adminTargets = ['kategori','sub_kategori','panduan_admin','kelola_dosen','pengaturan_aplikasi'];
+        var adminTargets = ['kategori','sub_kategori','panduan_admin','kelola_dosen'];
         if (isPengaturanHidden() && (adminTargets.indexOf(target) >= 0 || target === 'setting')) {
             showNotif('error', 'Akses Ditolak', 'Menu ini tidak dapat diakses.'); return;
         }
@@ -230,8 +172,7 @@ function setupNavigation() {
         else if (target === 'sub_kategori') { activeCategory = 'sub_kategori'; titleEl.innerText = 'Sub-Kategori';       renderSubKategoriPage(mc); }
         else if (target === 'panduan_admin'){ activeCategory = 'panduan_admin';titleEl.innerText = 'Panduan Menu';       renderPanduanAdminPage(mc); }
         else if (target === 'kelola_dosen') { activeCategory = 'kelola_dosen'; titleEl.innerText = 'Kelola Dosen';       renderKelolaDosen(mc); }
-        else if (target === 'setting')      { activeCategory = 'setting';      titleEl.innerText = 'Manajemen User';     renderSettingPage(mc); }
-        else if (target === 'pengaturan_aplikasi') { activeCategory = 'pengaturan_aplikasi'; titleEl.innerText = 'Pengaturan Aplikasi'; renderPengaturanAplikasi(mc); }
+        else if (target === 'setting')      { activeCategory = 'setting';      titleEl.innerText = 'Setting Sistem';     renderSettingPage(mc); }
         else if (target.startsWith('kat_')) {
             var katId = item.getAttribute('data-kat-id');
             var katNama = item.getAttribute('data-kat-nama');
@@ -249,7 +190,7 @@ function renderDashboard(container) {
     kategoriData.forEach(function(kat) {
         if (!katBolehDiakses(kat)) return;
         var cnt = CACHE.counts[kat.id] || 0;
-        cardsHtml += '<div class="stat-card" style="cursor:pointer; transition:transform 0.2s;" onmouseover="this.style.transform=\'scale(1.02)\'" onmouseout="this.style.transform=\'none\'" onclick="navToKategori(\'' + kat.id + '\')"><div class="stat-icon"><i class="' + (kat.icon || 'fa-solid fa-folder') + '"></i></div><div class="stat-info"><h4>' + kat.nama + '</h4><span>' + cnt + '</span></div></div>';
+        cardsHtml += '<div class="stat-card"><div class="stat-icon"><i class="' + (kat.icon || 'fa-solid fa-folder') + '"></i></div><div class="stat-info"><h4>' + kat.nama + '</h4><span>' + cnt + '</span></div></div>';
     });
     var logsHtml = '';
     var logs = CACHE.loginLogs;
@@ -260,10 +201,11 @@ function renderDashboard(container) {
     }); }
 
     container.innerHTML =
-        '<div class="card" style="margin-bottom:25px; border-left:4px solid var(--primary-red); padding:20px 25px;"><div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;"><div style="width:55px; height:55px; background:var(--light-red); border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--primary-red); font-size:26px;"><i class="fa-solid fa-hands-clapping"></i></div><div style="flex:1; min-width:200px;"><h3 style="margin:0; font-size:18px;">' + (CACHE.welcomeTitle || 'Selamat Datang di GRID!') + '</h3><p style="margin:4px 0 0; color:var(--text-muted); font-size:14px;">' + (CACHE.welcomeSubtext || 'Gerbang Repositori Informasi Data Prodi Pendidikan Matematika') + '</p></div><button class="btn btn-secondary" onclick="preloadData()" style="white-space:nowrap;"><i class="fa-solid fa-rotate"></i> Refresh Data</button></div></div>' +
+        '<div class="card" style="margin-bottom:25px; border-left:4px solid var(--primary-red); padding:20px 25px;"><div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;"><div style="width:55px; height:55px; background:var(--light-red); border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--primary-red); font-size:26px;"><i class="fa-solid fa-hands-clapping"></i></div><div style="flex:1; min-width:200px;"><h3 style="margin:0; font-size:18px;">Selamat Datang di GRID!</h3><p style="margin:4px 0 0; color:var(--text-muted); font-size:14px;">Gerbang Repositori Informasi Data Prodi Pendidikan Matematika</p></div><button class="btn btn-secondary" onclick="preloadData()" style="white-space:nowrap;"><i class="fa-solid fa-rotate"></i> Refresh Data</button></div></div>' +
 
         '<div class="dash-cards-grid">' + cardsHtml + '</div>' +
         '<div class="dash-content-grid"><div class="card"><div class="card-header header-no-border"><div class="card-title"><i class="fa-solid fa-chart-column" style="margin-right:8px; color:var(--primary-red)"></i>Statistik Arsip</div></div><div style="position:relative; height:300px; width:100%;"><canvas id="myChart"></canvas></div></div><div class="card"><div class="card-header header-no-border"><div class="card-title"><i class="fa-solid fa-clock-rotate-left" style="margin-right:8px; color:var(--primary-red)"></i>Login Terakhir</div></div><div class="login-log" style="max-height:380px; overflow-y:auto; padding-right:4px;">' + logsHtml + '</div></div></div>';
+
 
     setTimeout(function() {
         var ctx = document.getElementById('myChart'); if (!ctx) return;
@@ -272,11 +214,6 @@ function renderDashboard(container) {
         if (dashChartInstance) dashChartInstance.destroy();
         dashChartInstance = new Chart(ctx, { type:'bar', data:{labels:labels, datasets:[{label:'Jumlah Arsip', data:vals, backgroundColor:'#C62828', borderRadius:4}]}, options:{responsive:true, maintainAspectRatio:false, scales:{y:{beginAtZero:true, ticks:{precision:0}}}} });
     }, 200);
-}
-
-function navToKategori(katId) {
-    var el = document.querySelector('[data-target="kat_' + katId + '"]');
-    if (el) el.click();
 }
 
 // ==================================================================
@@ -297,19 +234,16 @@ function buildDataPageHtml(container, katId, katNama, subList, dataList) {
     var katObj = kategoriData.find(function(k){ return k.id === katId; });
     var showUploader = katObj && katObj.kode_arsip !== 'MHS' && katObj.kode_arsip !== 'ALU';
     window._showUploader = showUploader;
-    window._currentKatKode = katObj ? katObj.kode_arsip : '';
     var uploaderTh = showUploader ? '<th>Uploader</th>' : '';
-
-    var btnTambahHtml = canEditArsip(window._currentKatKode) ? '<button class="btn btn-primary" onclick="openUploadModal(\'' + katId + '\', \'' + katNama + '\')" ><i class="fa-solid fa-plus"></i> Tambah Arsip</button>' : '';
 
     container.innerHTML =
         '<div class="card"><div class="card-header"><div class="card-title"><i class="fa-solid fa-database" style="margin-right:8px; color:var(--primary-red)"></i>Arsip ' + katNama + '</div>' +
         '<div style="display:flex; gap:8px;">' +
         '<button class="btn" style="background:var(--light-red); color:var(--primary-red); border:1px solid #f5c6cb;" onclick="openInfoModal(\'' + katId + '\', \'' + katNama + '\')" ><i class="fa-solid fa-circle-info"></i> Panduan</button>' +
-        btnTambahHtml +
+        '<button class="btn btn-primary" onclick="openUploadModal(\'' + katId + '\', \'' + katNama + '\')" ><i class="fa-solid fa-plus"></i> Tambah Arsip</button>' +
         '</div></div>' +
-        '<div class="filter-bar"><div class="form-group"><label><i class="fa-solid fa-search" style="margin-right:4px;"></i>Cari:</label><input type="text" id="filterSearch" class="form-control" placeholder="Ketik kata kunci..." oninput="window._currentPage=1; applyFilter()" style="min-width:200px;"></div><div class="form-group"><label><i class="fa-solid fa-calendar" style="margin-right:4px;"></i>Tahun:</label><select id="filterTahun" class="form-control" onchange="window._currentPage=1; applyFilter()">' + yrOpt + '</select></div><div class="form-group"><label><i class="fa-solid fa-layer-group" style="margin-right:4px;"></i>Sub:</label><select id="filterSub" class="form-control" onchange="window._currentPage=1; applyFilter()">' + subOpt + '</select></div><div style="flex:1"></div><button class="btn btn-success" onclick="doExportExcel(\'' + katId + '\')" ><i class="fa-solid fa-file-excel"></i> Export Excel</button></div>' +
-        '<div class="table-responsive"><table><thead><tr><th>Kode Arsip</th><th>Nama Arsip</th><th>Sub Kategori</th><th>Tipe File</th><th>Tgl Upload</th>' + uploaderTh + '<th style="width:80px;">Aksi</th></tr></thead><tbody id="tableBody"></tbody></table></div><div id="paginationContainer" style="display:flex; justify-content:flex-end; gap:5px; padding:15px 20px; align-items:center;"></div></div>';
+        '<div class="filter-bar"><div class="form-group"><label><i class="fa-solid fa-calendar" style="margin-right:4px;"></i>Tahun:</label><select id="filterTahun" class="form-control" onchange="applyFilter()">' + yrOpt + '</select></div><div class="form-group"><label><i class="fa-solid fa-layer-group" style="margin-right:4px;"></i>Sub:</label><select id="filterSub" class="form-control" onchange="applyFilter()">' + subOpt + '</select></div><div style="flex:1"></div><button class="btn btn-success" onclick="doExportExcel(\'' + katId + '\')" ><i class="fa-solid fa-file-excel"></i> Export Excel</button></div>' +
+        '<div class="table-responsive"><table><thead><tr><th>Kode Arsip</th><th>Nama Arsip</th><th>Sub Kategori</th><th>Tipe File</th><th>Tgl Upload</th>' + uploaderTh + '<th style="width:80px;">Aksi</th></tr></thead><tbody id="tableBody"></tbody></table></div></div>';
 
     window._currentDataList = dataList;
     window._currentKatId = katId;
@@ -317,45 +251,17 @@ function buildDataPageHtml(container, katId, katNama, subList, dataList) {
     applyFilter();
 }
 
-function applyFilter(page) {
-    if(page !== undefined) window._currentPage = page;
-    else if(!window._currentPage) window._currentPage = 1;
-
+function applyFilter() {
     var data = window._currentDataList || [];
-    var ft = document.getElementById('filterTahun'), fs = document.getElementById('filterSub'), fSrc = document.getElementById('filterSearch');
-    var fv = ft ? ft.value : 'ALL', sv = fs ? fs.value : 'ALL', srcV = fSrc ? fSrc.value.toLowerCase() : '';
-
-    var filtered = data.filter(function(d) {
-        var matchTahun = (fv === 'ALL' || String(d.tahun) === fv);
-        var matchSub = (sv === 'ALL' || d.sub_kategori === sv);
-        var matchSearch = true;
-        if(srcV) {
-            var searchStr = ((d.kode_arsip||'') + ' ' + (d.nama_arsip||'') + ' ' + (d.sub_kategori||'') + ' ' + (d.tipe_file||'') + ' ' + (d.tgl_upload||'') + ' ' + (d.uploader||'')).toLowerCase();
-            matchSearch = searchStr.indexOf(srcV) > -1;
-        }
-        return matchTahun && matchSub && matchSearch;
-    });
-
+    var ft = document.getElementById('filterTahun'), fs = document.getElementById('filterSub');
+    var fv = ft ? ft.value : 'ALL', sv = fs ? fs.value : 'ALL';
+    var filtered = data.filter(function(d) { return (fv === 'ALL' || String(d.tahun) === fv) && (sv === 'ALL' || d.sub_kategori === sv); });
     var tb = document.getElementById('tableBody'); if (!tb) return;
-    var pc = document.getElementById('paginationContainer');
 
-    if (filtered.length === 0) {
-        tb.innerHTML = '<tr><td colspan="' + (window._showUploader ? 7 : 6) + '" style="text-align:center; padding:30px; color:var(--text-muted)"><i class="fa-solid fa-inbox" style="font-size:24px; display:block; margin-bottom:10px;"></i>Belum ada arsip.</td></tr>';
-        if(pc) pc.innerHTML = '';
-        return;
-    }
-
-    var itemsPerPage = 10;
-    var totalPages = Math.ceil(filtered.length / itemsPerPage);
-    if(window._currentPage > totalPages) window._currentPage = totalPages;
-    if(window._currentPage < 1) window._currentPage = 1;
-
-    var startIndex = (window._currentPage - 1) * itemsPerPage;
-    var endIndex = startIndex + itemsPerPage;
-    var paginatedData = filtered.slice(startIndex, endIndex);
+    if (filtered.length === 0) { tb.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px; color:var(--text-muted)"><i class="fa-solid fa-inbox" style="font-size:24px; display:block; margin-bottom:10px;"></i>Belum ada arsip.</td></tr>'; return; }
 
     var html = '';
-    paginatedData.forEach(function(d) {
+    filtered.forEach(function(d) {
         var fi = 'fa-file', bc = 'badge-file', t = (d.tipe_file || 'FILE').toUpperCase();
         if (t.indexOf('PDF') > -1) { fi = 'fa-file-pdf'; bc = 'badge-pdf'; }
         else if (t.indexOf('XLS') > -1 || t.indexOf('CSV') > -1) { fi = 'fa-file-excel'; bc = 'badge-xls'; }
@@ -372,17 +278,10 @@ function applyFilter(page) {
             (window._showUploader ? '<td style="font-size:12px; color:var(--text-muted);"><i class="fa-solid fa-user" style="margin-right:4px;"></i>' + (d.uploader || '-') + '</td>' : '') +
             '<td><div class="action-btns">' +
                 (d.file_url ? '<a href="' + d.file_url + '" target="_blank" class="btn-icon btn-view" title="Lihat"><i class="fa-solid fa-eye"></i></a>' : '') +
-                (canEditArsip(window._currentKatKode) ? '<button class="btn-icon btn-delete" title="Hapus" onclick="confirmHapusArsip(\'' + d.id + '\', \'' + d.nama_arsip.replace(/'/g, "\\'") + '\')" ><i class="fa-solid fa-trash-can"></i></button>' : '') +
+                '<button class="btn-icon btn-delete" title="Hapus" onclick="confirmHapusArsip(\'' + d.id + '\', \'' + d.nama_arsip.replace(/'/g, "\\'") + '\')" ><i class="fa-solid fa-trash-can"></i></button>' +
             '</div></td></tr>';
     });
     tb.innerHTML = html;
-
-    if(pc) {
-        var pageHtml = '<span style="font-size:12px; color:var(--text-muted); margin-right:10px;">Halaman ' + window._currentPage + ' dari ' + totalPages + ' (' + filtered.length + ' data)</span>';
-        pageHtml += '<button class="btn" style="padding:4px 10px; border:1px solid #ddd; background:' + (window._currentPage === 1 ? '#f5f5f5' : '#fff') + ';" onclick="applyFilter(' + (window._currentPage - 1) + ')" ' + (window._currentPage === 1 ? 'disabled' : '') + '><i class="fa-solid fa-chevron-left"></i></button>';
-        pageHtml += '<button class="btn" style="padding:4px 10px; border:1px solid #ddd; background:' + (window._currentPage === totalPages ? '#f5f5f5' : '#fff') + ';" onclick="applyFilter(' + (window._currentPage + 1) + ')" ' + (window._currentPage === totalPages ? 'disabled' : '') + '><i class="fa-solid fa-chevron-right"></i></button>';
-        pc.innerHTML = pageHtml;
-    }
 }
 
 // ==================================================================
@@ -584,7 +483,7 @@ function confirmHapusSubKat(id, nama) {
 }
 
 // ==================================================================
-// SETTING â€” USER MANAGEMENT (role-aware)
+// SETTING Ã¢â‚¬â€ USER MANAGEMENT (role-aware)
 // ==================================================================
 function renderSettingPage(container) {
     var myId = currentUser ? currentUser.id : '';
@@ -619,9 +518,7 @@ function renderSettingPage(container) {
     }
 
     // ADMIN: tampilkan lengkap user management
-    container.innerHTML = 
-        '<div class="card"><div class="card-header"><div class="card-title"><i class="fa-solid fa-users-gear" style="margin-right:8px; color:var(--primary-red)"></i>Manajemen User</div><button class="btn btn-primary" onclick="openUserModal()"><i class="fa-solid fa-user-plus"></i> Tambah User</button></div><div class="table-responsive"><table><thead><tr><th>No</th><th>Username</th><th>Role</th><th>Status</th><th style="width:120px;">Aksi</th></tr></thead><tbody id="userTableBody"><tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr></tbody></table></div></div>';
-
+    container.innerHTML = '<div class="card"><p style="padding:20px;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat...</p></div>';
     google.script.run
         .withSuccessHandler(function(users) {
             var rows = '';
@@ -631,13 +528,10 @@ function renderSettingPage(container) {
                 var rb = '<span class="badge badge-file">' + (roleMap[u.role]||u.role) + '</span>';
                 rows += '<tr><td>'+(i+1)+'</td><td><strong>'+u.username+'</strong></td><td>'+rb+'</td><td>'+sb+'</td><td><div class="action-btns"><button class="btn-icon btn-edit" onclick="openPasswordModal(\'' + u.id + '\',\'' + u.username.replace(/'/g, "\\'") + '\')"><i class="fa-solid fa-key"></i></button><button class="btn-icon" style="background:#f39c12;" onclick="confirmToggle(\'' + u.id + '\',\'' + u.username.replace(/'/g, "\\'") + '\')"><i class="fa-solid fa-toggle-on"></i></button><button class="btn-icon btn-delete" onclick="confirmHapusUser(\'' + u.id + '\',\'' + u.username.replace(/'/g, "\\'") + '\')"><i class="fa-solid fa-trash-can"></i></button></div></td></tr>';
             });
-            var tb = document.getElementById('userTableBody');
-            if (tb) tb.innerHTML = rows || '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">Belum ada user.</td></tr>';
+            container.innerHTML =
+                '<div class="card"><div class="card-header"><div class="card-title"><i class="fa-solid fa-users-gear" style="margin-right:8px; color:var(--primary-red)"></i>Manajemen User</div><button class="btn btn-primary" onclick="openUserModal()"><i class="fa-solid fa-user-plus"></i> Tambah User</button></div><div class="table-responsive"><table><thead><tr><th>No</th><th>Username</th><th>Role</th><th>Status</th><th style="width:120px;">Aksi</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
         })
-        .withFailureHandler(function(err){ 
-            var tb = document.getElementById('userTableBody');
-            if (tb) tb.innerHTML = '<tr><td colspan="5" style="color:red; text-align:center;">Gagal: ' + err.message + '</td></tr>';
-        })
+        .withFailureHandler(function(err){ container.innerHTML='<div class="card"><p style="color:red;">Gagal: '+err.message+'</p></div>'; })
         .getUserList();
 }
 
@@ -667,7 +561,7 @@ document.getElementById('passwordForm').addEventListener('submit', function(e) {
 
 function confirmToggle(id, username) {
     showConfirm('<i class="fa-solid fa-toggle-on"></i>', '#fff3e0', '#f39c12',
-        'Ubah Status User?', 'Status "' + username + '" akan diubah (aktif â†” nonaktif).',
+        'Ubah Status User?', 'Status "' + username + '" akan diubah (aktif Ã¢â€ â€ nonaktif).',
         '<i class="fa-solid fa-toggle-on"></i> Ya, Ubah', '#f39c12', function() {
             google.script.run.withSuccessHandler(function(r) { showNotif('success', 'Berhasil!', r.message); renderSettingPage(document.getElementById('mainContentArea')); }).toggleUserStatus(id);
         });
@@ -684,8 +578,7 @@ function confirmHapusUser(id, username) {
 // KELOLA DOSEN (Admin Only)
 // ==================================================================
 function renderKelolaDosen(container) {
-    container.innerHTML = '<div class="card"><div class="card-header"><div class="card-title"><i class="fa-solid fa-chalkboard-user" style="margin-right:8px;color:var(--primary-red)"></i>Kelola Akun Dosen</div><button class="btn btn-primary" onclick="openDosenModal()"><i class="fa-solid fa-plus"></i> Tambah Dosen</button></div><div class="table-responsive"><table><thead><tr><th>No</th><th>Nama</th><th>NIP/NIDN</th><th>Username</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="dosenTableBody"><tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr></tbody></table></div></div>';
-
+    container.innerHTML = '<div class="card"><p style="padding:20px;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat...</p></div>';
     google.script.run
         .withSuccessHandler(function(users) {
             var dosen = users.filter(function(u){ return u.role === 'dosen'; });
@@ -694,14 +587,10 @@ function renderKelolaDosen(container) {
                     var sb = u.status==='active' ? '<span class="badge badge-success">Aktif</span>' : '<span class="badge badge-pdf">Nonaktif</span>';
                     return '<tr><td>'+(i+1)+'</td><td><strong>'+(u.nama||'-')+'</strong></td><td style="font-size:12px;color:var(--text-muted);">'+(u.nip_nidn||'-')+'</td><td><code>'+u.username+'</code></td><td>'+sb+'</td><td><div class="action-btns"><button class="btn-icon btn-edit" onclick="openDosenModal(\''+u.id+'\')"><i class="fa-solid fa-pen"></i></button><button class="btn-icon btn-delete" onclick="confirmHapusUser(\'' + u.id + '\',\'' + u.username.replace(/'/g, "\\'") + '\')"><i class="fa-solid fa-trash-can"></i></button></div></td></tr>';
                 }).join('');
-            var tb = document.getElementById('dosenTableBody');
-            if (tb) tb.innerHTML = rows;
+            container.innerHTML = '<div class="card"><div class="card-header"><div class="card-title"><i class="fa-solid fa-chalkboard-user" style="margin-right:8px;color:var(--primary-red)"></i>Kelola Akun Dosen</div><button class="btn btn-primary" onclick="openDosenModal()"><i class="fa-solid fa-plus"></i> Tambah Dosen</button></div><div class="table-responsive"><table><thead><tr><th>No</th><th>Nama</th><th>NIP/NIDN</th><th>Username</th><th>Status</th><th>Aksi</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
             window._dosenCache = dosen;
         })
-        .withFailureHandler(function(err){ 
-            var tb = document.getElementById('dosenTableBody');
-            if (tb) tb.innerHTML = '<tr><td colspan="6" style="color:red; text-align:center;">Gagal: ' + err.message + '</td></tr>';
-        })
+        .withFailureHandler(function(err){ container.innerHTML='<div class="card"><p style="color:red;">Gagal: '+err.message+'</p></div>'; })
         .getUserList();
 }
 function openDosenModal(id) {
@@ -731,7 +620,7 @@ document.getElementById('dosenForm').addEventListener('submit', function(e) {
 });
 
 // ==================================================================
-// PANDUAN â€” Tampilkan Info ke User
+// PANDUAN Ã¢â‚¬â€ Tampilkan Info ke User
 // ==================================================================
 function openInfoModal(katId, katNama) {
     var panduan = CACHE.panduan[katId];
@@ -754,7 +643,7 @@ function openInfoModal(katId, katNama) {
 }
 
 // ==================================================================
-// PANDUAN ADMIN â€” Kelola Panduan Per Kategori
+// PANDUAN ADMIN Ã¢â‚¬â€ Kelola Panduan Per Kategori
 // ==================================================================
 function renderPanduanAdminPage(container) {
     var rows = '';
@@ -863,223 +752,12 @@ function dosenSimpanProfil(id) {
 }
 
 // ==================================================================
-// ==================================================================
-// RENDER MODAL APA ITU GRID (Dinamis dari Settings)
-// ==================================================================
-function renderModalApaItuGRID() {
-    var body = document.getElementById('modalApaItuGRIDBody');
-    if (!body) return;
-    var s = CACHE.settings || {};
-    var appName = s.app_name || 'GRID';
-    var desc = s.grid_modal_desc || (appName + ' adalah sistem informasi manajemen data terpadu yang dikembangkan khusus untuk mendukung kebutuhan administrasi, akademik, dan riset di lingkungan Program Studi.');
-    var defaultCards = [
-        { icon: 'fa-solid fa-user-graduate', color1: '#C62828', color2: '#E53935', title: 'Data Mahasiswa',     desc: 'Manajemen data mahasiswa aktif, alumni, dan profil akademik.' },
-        { icon: 'fa-solid fa-file-lines',    color1: '#1565C0', color2: '#1E88E5', title: 'Dokumen Digital',    desc: 'Pengelolaan dokumen tugas akhir, laporan, dan berkas penting lainnya.' },
-        { icon: 'fa-solid fa-chart-bar',     color1: '#2E7D32', color2: '#43A047', title: 'Laporan & Statistik', desc: 'Dashboard analitik dan rekapitulasi data program studi secara real-time.' },
-        { icon: 'fa-solid fa-shield-halved', color1: '#E65100', color2: '#FB8C00', title: 'Akses Berbasis Peran', desc: 'Hak akses berbeda untuk Admin, Dosen, Mahasiswa, dan Alumni.' }
-    ];
-    var cards;
-    try { cards = JSON.parse(s.grid_modal_cards || ''); } catch(e) { cards = null; }
-    if (!Array.isArray(cards) || cards.length === 0) cards = defaultCards;
-
-    var cardsHtml = cards.map(function(c) {
-        return '<div style="background:#fff; border-radius:12px; padding:16px; border:1px solid #fde8e8; box-shadow:0 2px 8px rgba(198,40,40,0.06); display:flex; flex-direction:column; gap:10px;">' +
-            '<div style="width:38px; height:38px; background:linear-gradient(135deg,' + (c.color1||'#C62828') + ',' + (c.color2||'#E53935') + '); border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">' +
-            '<i class="' + (c.icon||'fa-solid fa-circle') + '" style="color:white; font-size:16px;"></i></div>' +
-            '<div><div style="font-size:13px; font-weight:700; color:var(--text-main); margin-bottom:4px;">' + (c.title||'') + '</div>' +
-            '<div style="font-size:12px; color:var(--text-muted); line-height:1.5;">' + (c.desc||'') + '</div></div></div>';
-    }).join('');
-
-    body.innerHTML =
-        '<p style="margin:0 0 18px; color:#2c3e50; font-size:14px; line-height:1.7;">' +
-        '<strong style="color:var(--primary-red);">' + appName + '</strong> ' + desc + '</p>' +
-        '<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px;">' + cardsHtml + '</div>';
-}
-
-// ==================================================================
-// PENGATURAN APLIKASI
-// ==================================================================
-function renderPengaturanAplikasi(container) {
-    var s = CACHE.settings || {};
-    var appName  = s.app_name        || 'GRID';
-    var dTitle   = s.welcome_title   || 'Selamat Datang di GRID!';
-    var dSub     = s.welcome_subtext || 'Gerbang Repositori Informasi Data Prodi Pendidikan Matematika';
-    var fUrl     = s.app_favicon     || 'https://cdn-icons-png.flaticon.com/512/5132/5132142.png';
-    var loginSub = s.login_subtext   || 'Sistem Database Program Studi';
-    var fText    = s.footer_text     || 'Pendidikan Matematika';
-    var gridDesc = s.grid_modal_desc || (appName + ' adalah sistem informasi manajemen data terpadu yang dikembangkan khusus untuk mendukung kebutuhan administrasi, akademik, dan riset di lingkungan Program Studi.');
-
-    var defaultCards = [
-        { icon: 'fa-solid fa-user-graduate', color1: '#C62828', color2: '#E53935', title: 'Data Mahasiswa',     desc: 'Manajemen data mahasiswa aktif, alumni, dan profil akademik.' },
-        { icon: 'fa-solid fa-file-lines',    color1: '#1565C0', color2: '#1E88E5', title: 'Dokumen Digital',    desc: 'Pengelolaan dokumen tugas akhir, laporan, dan berkas penting lainnya.' },
-        { icon: 'fa-solid fa-chart-bar',     color1: '#2E7D32', color2: '#43A047', title: 'Laporan & Statistik', desc: 'Dashboard analitik dan rekapitulasi data program studi secara real-time.' },
-        { icon: 'fa-solid fa-shield-halved', color1: '#E65100', color2: '#FB8C00', title: 'Akses Berbasis Peran', desc: 'Hak akses berbeda untuk Admin, Dosen, Mahasiswa, dan Alumni.' }
-    ];
-    var cards;
-    try { cards = JSON.parse(s.grid_modal_cards || ''); } catch(e) { cards = null; }
-    if (!Array.isArray(cards) || cards.length === 0) cards = defaultCards;
-
-    var cardRowsHtml = cards.map(function(c, i) {
-        return '<div style="background:#f8f9fa; border-radius:10px; padding:14px; margin-bottom:10px; border:1px solid #e0e0e0;">' +
-            '<p style="margin:0 0 8px; font-size:12px; font-weight:700; color:var(--primary-red);">Kartu ' + (i+1) + '</p>' +
-            '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">' +
-            '<input type="text" id="card_icon_' + i + '" class="form-control" placeholder="Icon FA (contoh: fa-solid fa-users)" style="font-size:12px; padding:6px 10px; flex:1; min-width:180px;" value="' + (c.icon||'') + '">' +
-            '<input type="text" id="card_c1_' + i + '" class="form-control" placeholder="Warna 1 (#hex)" style="font-size:12px; padding:6px 8px; width:110px; flex-shrink:0;" value="' + (c.color1||'#C62828') + '">' +
-            '<input type="text" id="card_c2_' + i + '" class="form-control" placeholder="Warna 2 (#hex)" style="font-size:12px; padding:6px 8px; width:110px; flex-shrink:0;" value="' + (c.color2||'#E53935') + '">' +
-            '</div>' +
-            '<div style="display:flex; gap:8px; flex-wrap:wrap;">' +
-            '<input type="text" id="card_title_' + i + '" class="form-control" placeholder="Judul Kartu" style="font-size:12px; padding:6px 10px; width:170px; flex-shrink:0;" value="' + (c.title||'') + '">' +
-            '<input type="text" id="card_desc_' + i + '" class="form-control" placeholder="Deskripsi kartu" style="font-size:12px; padding:6px 10px; flex:1; min-width:200px;" value="' + (c.desc||'') + '">' +
-            '</div></div>';
-    }).join('');
-
-    container.innerHTML =
-        // ── TAB WRAPPER ──
-        '<div class="card" style="padding:0; overflow:hidden;">' +
-        // Tab bar
-        '<div style="display:flex; border-bottom:2px solid #f0f0f0; background:#fafafa;">' +
-        '<button id="tab-btn-umum" onclick="switchSettingTab(\'umum\')" style="flex:1; padding:14px 20px; border:none; background:transparent; font-size:14px; font-weight:600; color:var(--primary-red); border-bottom:3px solid var(--primary-red); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:all 0.2s;">' +
-        '<i class="fa-solid fa-desktop"></i> Pengaturan Aplikasi</button>' +
-        '<button id="tab-btn-modal" onclick="switchSettingTab(\'modal\')" style="flex:1; padding:14px 20px; border:none; background:transparent; font-size:14px; font-weight:600; color:var(--text-muted); border-bottom:3px solid transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:all 0.2s;">' +
-        '<i class="fa-solid fa-circle-info"></i> Konten Modal Login</button>' +
-        '</div>' +
-
-        // ── Tab 1: Pengaturan Umum ──
-        '<div id="tab-panel-umum" style="padding:24px; max-width:600px;">' +
-        '<div class="form-group"><label>Nama Aplikasi Singkat (Contoh: GRID)</label><input type="text" id="set_app_name" class="form-control" value="' + appName + '"></div>' +
-        '<div class="form-group"><label>URL Icon Favicon (Gambar Web)</label><input type="text" id="set_app_favicon" class="form-control" value="' + fUrl + '"></div>' +
-        '<div class="form-group"><label>Sub-Judul Halaman Login</label><input type="text" id="set_login_subtext" class="form-control" value="' + loginSub + '"></div>' +
-        '<div class="form-group"><label>Judul Welcome Dashboard</label><input type="text" id="set_welcome_title" class="form-control" value="' + dTitle + '"></div>' +
-        '<div class="form-group"><label>Sub-Judul Welcome Dashboard</label><textarea id="set_welcome_subtext" class="form-control" rows="2">' + dSub + '</textarea></div>' +
-        '<div class="form-group"><label>Teks Footer / Nama Prodi</label><input type="text" id="set_footer_text" class="form-control" value="' + fText + '"></div>' +
-        '<button class="btn btn-primary" onclick="simpanPengaturanAplikasi(event)" style="margin-top:4px;"><i class="fa-solid fa-save"></i> Simpan Pengaturan</button>' +
-        '</div>' +
-
-        // ── Tab 2: Konten Modal Login ──
-        '<div id="tab-panel-modal" style="padding:24px; display:none;">' +
-        '<p style="margin:0 0 18px; font-size:13px; color:var(--text-muted);">Konten ini muncul saat pengguna mengklik <strong>"Apa itu GRID?"</strong> di halaman login. Nama icon bisa dicari di <a href="https://fontawesome.com/icons" target="_blank" style="color:var(--primary-red);">fontawesome.com/icons</a>.</p>' +
-        '<div class="form-group"><label>Deskripsi Singkat Aplikasi</label>' +
-        '<textarea id="set_grid_modal_desc" class="form-control" rows="3" placeholder="Deskripsi yang muncul di atas kartu-kartu fitur...">' + gridDesc + '</textarea></div>' +
-        '<label style="font-weight:600; font-size:14px; display:block; margin-bottom:12px;">Kartu Fitur <span style="font-weight:400; font-size:12px; color:var(--text-muted);">(icon dari fontawesome.com)</span></label>' +
-        cardRowsHtml +
-        '<button class="btn btn-primary" onclick="simpanKontenModalGrid(event)" style="margin-top:12px;"><i class="fa-solid fa-save"></i> Simpan Konten Modal</button>' +
-        '</div>' +
-        '</div>';
-}
-
-function switchSettingTab(tab) {
-    var panels = ['umum', 'modal'];
-    panels.forEach(function(t) {
-        var panel = document.getElementById('tab-panel-' + t);
-        var btn   = document.getElementById('tab-btn-'   + t);
-        if (!panel || !btn) return;
-        if (t === tab) {
-            panel.style.display = 'block';
-            btn.style.color = 'var(--primary-red)';
-            btn.style.borderBottom = '3px solid var(--primary-red)';
-            btn.style.background = 'transparent';
-        } else {
-            panel.style.display = 'none';
-            btn.style.color = 'var(--text-muted)';
-            btn.style.borderBottom = '3px solid transparent';
-        }
-    });
-}
-
-function simpanKontenModalGrid(event) {
-    var btn = event.currentTarget;
-    var s = CACHE.settings ? JSON.parse(JSON.stringify(CACHE.settings)) : {};
-
-    // Baca deskripsi
-    var desc = document.getElementById('set_grid_modal_desc');
-    if (desc) s.grid_modal_desc = desc.value.trim();
-
-    // Baca kartu (kumpulkan sampai index 10, hentikan jika tidak ada)
-    var cards = [];
-    for (var i = 0; i < 10; i++) {
-        var iconEl  = document.getElementById('card_icon_'  + i);
-        var c1El    = document.getElementById('card_c1_'    + i);
-        var c2El    = document.getElementById('card_c2_'    + i);
-        var titleEl = document.getElementById('card_title_' + i);
-        var descEl  = document.getElementById('card_desc_'  + i);
-        if (!iconEl) break;
-        cards.push({
-            icon:   iconEl.value.trim(),
-            color1: c1El.value.trim(),
-            color2: c2El.value.trim(),
-            title:  titleEl.value.trim(),
-            desc:   descEl.value.trim()
-        });
-    }
-    if (cards.length === 0) return showNotif('error', 'Gagal', 'Tidak ada kartu yang ditemukan.');
-
-    s.grid_modal_cards = JSON.stringify(cards);
-
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
-
-    google.script.run
-        .withSuccessHandler(function(r) {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-save"></i> Simpan Konten Modal';
-            showNotif('success', 'Berhasil', r.message || 'Konten modal berhasil disimpan!');
-            CACHE.settings = s;
-            renderModalApaItuGRID();
-        })
-        .withFailureHandler(function(err) {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-save"></i> Simpan Konten Modal';
-            showNotif('error', 'Gagal', err.message);
-        })
-        .saveSystemSettings(s);
-}
-
-function simpanPengaturanAplikasi(event) {
-    var btn = event.currentTarget;
-    var appName = document.getElementById('set_app_name').value.trim();
-    var fUrl = document.getElementById('set_app_favicon').value.trim();
-    var loginSub = document.getElementById('set_login_subtext').value.trim();
-    var wTitle = document.getElementById('set_welcome_title').value.trim();
-    var wSub = document.getElementById('set_welcome_subtext').value.trim();
-    var fText = document.getElementById('set_footer_text').value.trim();
-
-    if(!appName) return showNotif('error', 'Gagal', 'Nama Aplikasi wajib diisi.');
-
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
-
-    var s = CACHE.settings ? JSON.parse(JSON.stringify(CACHE.settings)) : {};
-    s.app_name = appName;
-    s.app_favicon = fUrl;
-    s.login_subtext = loginSub;
-    s.welcome_title = wTitle;
-    s.welcome_subtext = wSub;
-    s.footer_text = fText;
-
-    google.script.run
-        .withSuccessHandler(function(r) {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-save"></i> Simpan Pengaturan';
-            showNotif('success', 'Berhasil', r.message);
-            CACHE.settings = s;
-            applySystemSettings();
-        })
-        .withFailureHandler(function(err) {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-save"></i> Simpan Pengaturan';
-            showNotif('error', 'Gagal', err.message);
-        })
-        .saveSystemSettings(s);
-}
-
-// ==================================================================
 // UTILITIES
 // ==================================================================
 function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
 // ==================================================================
-// INIT SESI â€” Dipanggil di sini setelah SEMUA fungsi sudah terdefinisi
+// INIT SESI Ã¢â‚¬â€ Dipanggil di sini setelah SEMUA fungsi sudah terdefinisi
 // Ini memastikan checkSession() bisa memanggil initDashboard() dengan benar
 // ==================================================================
 checkSession();
-</script>
