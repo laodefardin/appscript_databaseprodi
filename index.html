@@ -50,34 +50,21 @@
                         </div>
                         <p style="margin:0; font-size:16px; color:var(--text-main); font-weight:500;">Selamat datang di
                         </p>
-                        <!-- CUSTOM SVG LOGO (HORIZONTAL SPLIT RED-ORANGE) -->
+                        <!-- CUSTOM SVG LOGO (MODERN RED GRADIENT) -->
                         <svg class="grid-logo-svg" width="240" height="75" viewBox="0 0 240 75" xmlns="http://www.w3.org/2000/svg" style="margin: 0 auto; display: block; overflow: visible;">
                             <defs>
-                                <linearGradient id="grid_top" x1="0%" y1="0%" x2="0%" y2="100%">
-                                    <stop offset="0%" stop-color="#EF5350" />
-                                    <stop offset="100%" stop-color="#D32F2F" />
+                                <linearGradient id="grid_full_gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#FF5252" /> <!-- Merah Terang -->
+                                    <stop offset="100%" stop-color="#8E0000" /> <!-- Merah Gelap -->
                                 </linearGradient>
-                                <linearGradient id="grid_bottom" x1="0%" y1="0%" x2="0%" y2="100%">
-                                    <stop offset="0%" stop-color="#FFCA28" />
-                                    <stop offset="100%" stop-color="#FF8F00" />
-                                </linearGradient>
-                                <clipPath id="bottomHalfClip">
-                                    <rect x="-130" y="-34" width="260" height="45" />
-                                </clipPath>
                             </defs>
 
                             <g transform="translate(120, 58)">
                                 <!-- Solid Pinkish-Red Shadow -->
                                 <text x="4" y="4" font-family="'Nunito', 'Arial Rounded MT Bold', 'Segoe UI Black', sans-serif" font-weight="900" font-size="68" text-anchor="middle" letter-spacing="-2" fill="#FFCDD2">GRID</text>
                                 
-                                <!-- Top Half (Red Gradient) -->
-                                <text class="dynamic-app-name" x="0" y="0" font-family="'Nunito', 'Arial Rounded MT Bold', 'Segoe UI Black', sans-serif" font-weight="900" font-size="68" text-anchor="middle" letter-spacing="-2" fill="url(#grid_top)">GRID</text>
-                                
-                                <!-- Bottom Half (Orange Gradient) -->
-                                <text class="dynamic-app-name" x="0" y="0" font-family="'Nunito', 'Arial Rounded MT Bold', 'Segoe UI Black', sans-serif" font-weight="900" font-size="68" text-anchor="middle" letter-spacing="-2" fill="url(#grid_bottom)" clip-path="url(#bottomHalfClip)">GRID</text>
-                                
-                                <!-- Inner Accent line for the cut -->
-                                <text class="dynamic-app-name" x="0" y="-1" font-family="'Nunito', 'Arial Rounded MT Bold', 'Segoe UI Black', sans-serif" font-weight="900" font-size="68" text-anchor="middle" letter-spacing="-2" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-opacity="0.3" clip-path="url(#bottomHalfClip)">GRID</text>
+                                <!-- Full Gradient Text -->
+                                <text class="dynamic-app-name" x="0" y="0" font-family="'Nunito', 'Arial Rounded MT Bold', 'Segoe UI Black', sans-serif" font-weight="900" font-size="68" text-anchor="middle" letter-spacing="-2" fill="url(#grid_full_gradient)">GRID</text>
                             </g>
                         </svg>
                         <div
