@@ -50,9 +50,36 @@
                         </div>
                         <p style="margin:0; font-size:16px; color:var(--text-main); font-weight:500;">Selamat datang di
                         </p>
-                        <h1 class="dynamic-app-name"
-                            style="font-size:42px; margin:0; color:var(--primary-red); font-weight:800; background: -webkit-linear-gradient(45deg, #C62828, #3498db); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                            GRID</h1>
+                        <!-- CUSTOM SVG LOGO (STYLE MYUT) -->
+                        <svg class="grid-logo-svg" width="240" height="75" viewBox="0 0 240 75" xmlns="http://www.w3.org/2000/svg" style="margin: 0 auto; display: block; overflow: visible;">
+                            <defs>
+                                <linearGradient id="ut_paint1" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" stop-color="#30CFD0" />
+                                    <stop offset="100%" stop-color="#330867" />
+                                </linearGradient>
+                                <linearGradient id="ut_paint2" x1="0%" y1="100%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="#FF5858" />
+                                    <stop offset="100%" stop-color="#F09819" />
+                                </linearGradient>
+                                <clipPath id="ribbonClip">
+                                    <path d="M0,75 Q 60,20 120,55 T 240,30 L 240,75 L 0,75 Z" />
+                                </clipPath>
+                            </defs>
+
+                            <g transform="translate(120, 58)">
+                                <!-- Shadow -->
+                                <text x="2" y="3" font-family="'Nunito', 'Arial Rounded MT Bold', 'Segoe UI Black', sans-serif" font-weight="900" font-size="68" text-anchor="middle" letter-spacing="-2" fill="rgba(0,0,0,0.12)">GRID</text>
+                                
+                                <!-- Base Blue/Purple Text -->
+                                <text class="dynamic-app-name" x="0" y="0" font-family="'Nunito', 'Arial Rounded MT Bold', 'Segoe UI Black', sans-serif" font-weight="900" font-size="68" text-anchor="middle" letter-spacing="-2" fill="url(#ut_paint1)">GRID</text>
+                                
+                                <!-- Overlapping Orange/Red Fold -->
+                                <text class="dynamic-app-name" x="0" y="0" font-family="'Nunito', 'Arial Rounded MT Bold', 'Segoe UI Black', sans-serif" font-weight="900" font-size="68" text-anchor="middle" letter-spacing="-2" fill="url(#ut_paint2)" clip-path="url(#ribbonClip)">GRID</text>
+                                
+                                <!-- Inner White Accent line for depth -->
+                                <text class="dynamic-app-name" x="0" y="-1" font-family="'Nunito', 'Arial Rounded MT Bold', 'Segoe UI Black', sans-serif" font-weight="900" font-size="68" text-anchor="middle" letter-spacing="-2" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-opacity="0.4" clip-path="url(#ribbonClip)">GRID</text>
+                            </g>
+                        </svg>
                         <div
                             style="background:linear-gradient(90deg, #ff8a00, #e52e71); color:white; display:inline-block; padding:4px 15px; border-radius:20px; font-weight:600; font-size:13px; margin-top:5px; box-shadow:0 4px 10px rgba(229, 46, 113, 0.3);">
                             <span id="dynamicLoginSubtext">Sistem Database Program Studi</span>

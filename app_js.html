@@ -169,7 +169,7 @@ function applySystemSettings() {
     var ftEl = document.getElementById('dynamicFooterText');
     if (ftEl) ftEl.innerHTML = '&copy; ' + new Date().getFullYear() + ' ' + appName + ' &mdash; ' + fText;
 
-    document.querySelectorAll('.dynamic-app-name').forEach(function(el){ el.innerText = appName; });
+    document.querySelectorAll('.dynamic-app-name').forEach(function(el){ el.textContent = appName; });
     CACHE.welcomeTitle = dTitle;
     CACHE.welcomeSubtext = dSub;
 
