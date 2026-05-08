@@ -1037,14 +1037,13 @@ function simpanPengaturanAplikasi(event) {
     btn.disabled = true;
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
 
-    var s = {
-        app_name: appName,
-        app_favicon: fUrl,
-        login_subtext: loginSub,
-        welcome_title: wTitle,
-        welcome_subtext: wSub,
-        footer_text: fText
-    };
+    var s = CACHE.settings ? JSON.parse(JSON.stringify(CACHE.settings)) : {};
+    s.app_name = appName;
+    s.app_favicon = fUrl;
+    s.login_subtext = loginSub;
+    s.welcome_title = wTitle;
+    s.welcome_subtext = wSub;
+    s.footer_text = fText;
 
     google.script.run
         .withSuccessHandler(function(r) {
