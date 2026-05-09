@@ -99,56 +99,50 @@ function isOperator()    { return getRole() === 'operator'; }
 function isPengaturanHidden() { return isMahasiswa() || isAlumni(); }
 
 // ==================================================================
-// PERMISSION HELPERS (per-user granular access)
+// MENU ACCESS — sederhana & pasti bekerja
 // ==================================================================
 /**
- * Cek apakah user saat ini memiliki izin [action] pada [menuKey].
- * Admin selalu diberi semua akses.
- * Jika user TIDAK memiliki entry permission → gunakan fallback role.
- * Jika ada entry permission → gunakan itu secara ketat.
- *
- * action: 'view' | 'create' | 'edit' | 'delete'
+ * Cek apakah user boleh mengakses menu dengan key tertentu.
+ * Jika currentUser.menuAccess adalah null → pakai aturan default role.
+ * Jika menuAccess adalah array → cek apakah key ada di dalamnya.
  */
-function hasPermission(menuKey, action) {
-    if (isAdmin()) return true;   // Admin selalu full-access
-    var perms = (currentUser && currentUser.permissions) ? currentUser.permissions : {};
-    // Jika tidak ada entry permission untuk menu ini → pakai fallback role
-    if (!perms[menuKey]) {
-        // Fallback: operator dan dosen punya view saja untuk semua menu
-        if (action === 'view') return isDosen() || isOperator();
-        if (action === 'create' || action === 'edit' || action === 'delete') return isOperator();
-        return false;
+function canAccessMenu(menuKey) {
+    if (isAdmin()) return true;  // Admin selalu full access
+    var ma = currentUser && currentUser.menuAccess;  // null atau array
+    if (ma !== null && ma !== undefined && Array.isArray(ma)) {
+        return ma.indexOf(menuKey) >= 0;
     }
-    return !!perms[menuKey][action];
+    // Fallback default berdasarkan role (tidak ada pengaturan khusus)
+    if (menuKey === 'dashboard') return true;
+    return isDosen() || isOperator(); // dosen & operator akses semua by default
 }
 
-/** Cek apakah user boleh MELIHAT menu ini sama sekali */
-function canViewMenu(menuKey) {
-    return hasPermission(menuKey, 'view');
-}
+// Alias untuk kompatibilitas kode lama
+function canViewMenu(menuKey) { return canAccessMenu(menuKey); }
+function hasPermission(menuKey, action) { return isAdmin() || canAccessMenu(menuKey); }
 
-// Cek apakah kategori boleh diakses oleh role saat ini
+// Cek apakah kategori boleh diakses
 function katBolehDiakses(kat) {
     if (isAdmin()) return true;
-    // Cek permission per kategori kode (gunakan kode_arsip lowercase sebagai key)
-    var menuKey = 'kat_' + (kat.kode_arsip || kat.id).toLowerCase();
-    var perms = (currentUser && currentUser.permissions) ? currentUser.permissions : {};
-    // Jika ada entry permission spesifik untuk kat ini → pakai itu
-    if (perms[menuKey] !== undefined) return !!perms[menuKey]['view'];
-    // Fallback lama berdasarkan role
+    // Jika ada menuAccess custom → gunakan
+    var ma = currentUser && currentUser.menuAccess;
+    if (ma !== null && ma !== undefined && Array.isArray(ma)) {
+        // Cek berdasarkan nama kategori atau id
+        return ma.indexOf('kat_' + kat.id) >= 0 || ma.indexOf(kat.id) >= 0 || ma.indexOf(kat.nama) >= 0;
+    }
+    // Fallback default role
     if (isDosen() || isOperator()) return true;
     if (isMahasiswa()) return kat.kode_arsip === 'MHS' || kat.kode_arsip === 'ALU';
     if (isAlumni())    return kat.kode_arsip === 'ALU';
     return false;
 }
 
-// Cek apakah role saat ini boleh menambah/menghapus arsip pada kategori tersebut
 function canEditArsip(katKode) {
     if (isAdmin()) return true;
-    var menuKey = 'kat_' + (katKode || '').toLowerCase();
-    var perms = (currentUser && currentUser.permissions) ? currentUser.permissions : {};
-    if (perms[menuKey] !== undefined) return !!(perms[menuKey]['create']);
-    // Fallback
+    var ma = currentUser && currentUser.menuAccess;
+    if (ma !== null && ma !== undefined && Array.isArray(ma)) {
+        return false; // view-only jika ada custom access
+    }
     if (isDosen() || isOperator()) return true;
     if (isMahasiswa() && katKode === 'MHS') return true;
     if (isAlumni()    && katKode === 'ALU') return true;
@@ -157,22 +151,20 @@ function canEditArsip(katKode) {
 
 function canDeleteArsip(katKode) {
     if (isAdmin()) return true;
-    var menuKey = 'kat_' + (katKode || '').toLowerCase();
-    var perms = (currentUser && currentUser.permissions) ? currentUser.permissions : {};
-    if (perms[menuKey] !== undefined) return !!(perms[menuKey]['delete']);
+    var ma = currentUser && currentUser.menuAccess;
+    if (ma !== null && ma !== undefined && Array.isArray(ma)) return false;
     return isOperator();
 }
 
 function canEditRowArsip(katKode) {
     if (isAdmin()) return true;
-    var menuKey = 'kat_' + (katKode || '').toLowerCase();
-    var perms = (currentUser && currentUser.permissions) ? currentUser.permissions : {};
-    if (perms[menuKey] !== undefined) return !!(perms[menuKey]['edit']);
-    return isDosen() || isOperator();
+    var ma = currentUser && currentUser.menuAccess;
+    if (ma !== null && ma !== undefined && Array.isArray(ma)) return false;
+    return isOperator();
 }
 
 // ==================================================================
-// MENU DINAMIS (role-aware + permission-aware)
+// MENU DINAMIS (role-aware + menuAccess-aware)
 // ==================================================================
 function renderMenu() {
     var mc = document.getElementById('dynamicMenuList');
@@ -188,36 +180,26 @@ function renderMenu() {
     var pengaturanSection = document.querySelector('.menu-section:last-of-type');
     if (pengaturanSection) pengaturanSection.style.display = isPengaturanHidden() ? 'none' : '';
 
-    // Sembunyikan menu admin-only
+    // Sembunyikan menu admin-only (kategori, sub, dll)
     var adminOnly = ['kategori','sub_kategori','panduan_admin','kelola_dosen','pengaturan_aplikasi'];
     adminOnly.forEach(function(t) {
         var el = document.querySelector('[data-target="' + t + '"]');
         if (el) el.style.display = isAdmin() ? '' : 'none';
     });
 
-    // Manajemen User: hanya tampil jika punya permission view
+    // Manajemen User: admin saja
     var settingEl = document.querySelector('[data-target="setting"]');
-    if (settingEl) {
-        if (isPengaturanHidden()) {
-            settingEl.style.display = 'none';
-        } else if (!isAdmin()) {
-            settingEl.style.display = canViewMenu('setting') ? '' : 'none';
-        } else {
-            settingEl.style.display = '';
-        }
-    }
+    if (settingEl) settingEl.style.display = isAdmin() ? '' : 'none';
 
-    // Dashboard: sembunyikan jika tidak punya permission
+    // Dashboard
     var dashEl = document.querySelector('[data-target="dashboard"]');
     if (dashEl && !isAdmin()) {
-        dashEl.style.display = canViewMenu('dashboard') ? '' : 'none';
+        dashEl.style.display = canAccessMenu('dashboard') ? '' : 'none';
     }
 
-    // Update sidebar user info
     var roleLabel = document.getElementById('sidebarRole');
     if (roleLabel) roleLabel.innerText = getRole();
 }
-
 
 function applySystemSettings() {
     var s = CACHE.settings || {};
@@ -267,7 +249,7 @@ function applySystemSettings() {
 }
 
 // ==================================================================
-// NAVIGASI SPA (role-aware + permission-aware)
+// NAVIGASI SPA (role-aware + menuAccess-aware)
 // ==================================================================
 function setupNavigation() {
     document.body.addEventListener('click', function(e) {
@@ -284,21 +266,10 @@ function setupNavigation() {
         if (!isAdmin() && adminTargets.indexOf(target) >= 0) {
             showNotif('error', 'Akses Ditolak', 'Menu ini hanya untuk Admin.'); return;
         }
-
-        // ── Cek permission per-user untuk menu non-kategori ──
-        var fixedMenuMap = {
-            'dashboard': 'dashboard',
-            'kategori': 'kategori',
-            'sub_kategori': 'sub_kategori',
-            'panduan_admin': 'panduan_admin',
-            'kelola_dosen': 'kelola_dosen',
-            'setting': 'setting',
-            'pengaturan_aplikasi': 'pengaturan_aplikasi'
-        };
-        if (fixedMenuMap[target] && !canViewMenu(fixedMenuMap[target])) {
+        // Cek menuAccess untuk menu tetap (dashboard, dll)
+        if (!isAdmin() && (target === 'dashboard') && !canAccessMenu(target)) {
             showNotif('error', 'Akses Ditolak', 'Anda tidak memiliki izin untuk mengakses menu ini.'); return;
         }
-
         // Blokir kategori yang tidak boleh diakses
         if (target.startsWith('kat_')) {
             var katId2 = item.getAttribute('data-kat-id');

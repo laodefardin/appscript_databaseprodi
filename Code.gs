@@ -154,19 +154,19 @@ function loginUser(username, password) {
     if (data[i][1] === username && decodePwd(data[i][2]) === password && data[i][4] === 'active') {
       var logSheet = getSheet(SHEET.LOGIN_LOG);
       logSheet.appendRow([generateId(), username, data[i][3], new Date()]);
-      var userId = data[i][0];
-      // Ambil permissions user ini
-      var perms = {};
-      try { perms = getUserPermissions(userId); } catch(e) {}
+      // Kolom ke-8 (index 7) = menu_access: string dipisah koma, misal "dashboard,akademik,penelitian"
+      var menuAccessRaw = data[i][7] || '';
+      var menuAccess = menuAccessRaw ? menuAccessRaw.toString().split(',').map(function(m){ return m.trim(); }).filter(Boolean) : null;
+      // null = tidak ada pengaturan = akses default sesuai role
       return {
         success: true,
         user: {
-          id:          userId,
+          id:          data[i][0],
           username:    data[i][1],
           role:        data[i][3],
           nama:        data[i][5] || username,
           nip_nidn:    data[i][6] || '',
-          permissions: perms   // <-- disertakan saat login
+          menuAccess:  menuAccess   // null = pakai default role, array = daftar menu yang boleh
         }
       };
     }
@@ -428,7 +428,17 @@ function getUserList() {
   var data  = sheet.getDataRange().getValues();
   var list  = [];
   for (var i = 1; i < data.length; i++) {
-    list.push({ id:data[i][0], username:data[i][1], role:data[i][3], status:data[i][4], nama:data[i][5]||'', nip_nidn:data[i][6]||'' });
+    var menuAccessRaw = data[i][7] || '';
+    var menuAccess = menuAccessRaw ? menuAccessRaw.toString().split(',').map(function(m){ return m.trim(); }).filter(Boolean) : null;
+    list.push({
+      id:         data[i][0],
+      username:   data[i][1],
+      role:       data[i][3],
+      status:     data[i][4],
+      nama:       data[i][5] || '',
+      nip_nidn:   data[i][6] || '',
+      menuAccess: menuAccess   // null = default role, array = daftar menu yang diizinkan
+    });
   }
   return list;
 }
@@ -440,7 +450,8 @@ function addUser(username, password, role, nama, nipNidn) {
     if (data[i][1] === username) return { success: false, message: 'Username "' + username + '" sudah digunakan.' };
   }
   var id = generateId();
-  sheet.appendRow([id, username, encodePwd(password), role || 'operator', 'active', nama||'', nipNidn||'']);
+  // Kolom: id, username, password, role, status, nama, nip_nidn, menu_access (kosong = default)
+  sheet.appendRow([id, username, encodePwd(password), role || 'operator', 'active', nama||'', nipNidn||'', '']);
   return { success: true, message: 'User "' + username + '" berhasil ditambahkan.' };
 }
 
@@ -506,63 +517,48 @@ function deleteUser(id) {
 }
 
 // ==================================================================
-// USER PERMISSIONS (Hak Akses per Menu)
+// USER MENU ACCESS — simpan & baca menu_access di kolom ke-8 Users
 // ==================================================================
-function getUserPermissions(userId) {
-  var sheet = getSheet(SHEET.USER_PERMISSIONS);
+
+/**
+ * Simpan daftar menu yang dibolehkan untuk user ke kolom menu_access (col H, index 7).
+ * allowedMenus: array string, misal ["dashboard","akademik"]
+ * Array kosong [] = sembunyikan semua menu (tidak ada akses)
+ * null / string kosong = reset ke default (akses sesuai role)
+ */
+function saveUserMenuAccess(userId, allowedMenus) {
+  var sheet = getSheet(SHEET.USERS);
   var data  = sheet.getDataRange().getValues();
-  var perms = {};
   for (var i = 1; i < data.length; i++) {
     if (data[i][0] === userId) {
-      var menuKey = data[i][1];
-      var actions = {};
-      try { actions = JSON.parse(data[i][2] || '{}'); } catch(e) { actions = {}; }
-      perms[menuKey] = actions;
+      var val = (allowedMenus && allowedMenus.length > 0) ? allowedMenus.join(',') : '';
+      sheet.getRange(i + 1, 8).setValue(val);
+      return { success: true, message: 'Hak akses menu berhasil disimpan.' };
     }
   }
-  return perms;
+  return { success: false, message: 'User tidak ditemukan.' };
 }
 
-function saveUserPermissions(userId, permissionsObj) {
-  // permissionsObj: { menuKey: { view: true, create: false, edit: true, delete: false }, ... }
-  var sheet = getSheet(SHEET.USER_PERMISSIONS);
+/**
+ * Ambil menu_access satu user (untuk refresh setelah session restore).
+ */
+function getUserMenuAccess(userId) {
+  var sheet = getSheet(SHEET.USERS);
   var data  = sheet.getDataRange().getValues();
-
-  // Hapus baris lama untuk user ini
-  for (var i = data.length - 1; i >= 1; i--) {
-    if (data[i][0] === userId) sheet.deleteRow(i + 1);
-  }
-
-  // Tulis baris baru
-  for (var menuKey in permissionsObj) {
-    sheet.appendRow([userId, menuKey, JSON.stringify(permissionsObj[menuKey]), new Date()]);
-  }
-
-  return { success: true, message: 'Hak akses berhasil disimpan.' };
-}
-
-function getAllUsersWithPermissions() {
-  var users = getUserList();
-  var sheet = getSheet(SHEET.USER_PERMISSIONS);
-  var data  = sheet.getDataRange().getValues();
-
-  // Build map: userId -> { menuKey: actions }
-  var permMap = {};
   for (var i = 1; i < data.length; i++) {
-    var uid = data[i][0];
-    var menuKey = data[i][1];
-    var actions = {};
-    try { actions = JSON.parse(data[i][2] || '{}'); } catch(e){}
-    if (!permMap[uid]) permMap[uid] = {};
-    permMap[uid][menuKey] = actions;
+    if (data[i][0] === userId) {
+      var raw = data[i][7] || '';
+      return raw ? raw.toString().split(',').map(function(m){ return m.trim(); }).filter(Boolean) : null;
+    }
   }
-
-  users.forEach(function(u) {
-    u.permissions = permMap[u.id] || {};
-  });
-
-  return users;
+  return null;
 }
+
+// Kompatibilitas: fungsi lama masih ada agar tidak error di kode lama
+function getUserPermissions(userId) { return {}; }
+function saveUserPermissions(userId, p) { return { success: true }; }
+function getAllUsersWithPermissions() { return getUserList(); }
+
 
 // ==================================================================
 // PANDUAN
@@ -729,7 +725,7 @@ function migrateSheets() {
     });
   }
 
-  ensureHeader(SHEET.USERS,        ['id_user','username','password','role','status','nama','nip_nidn']);
+  ensureHeader(SHEET.USERS,        ['id_user','username','password','role','status','nama','nip_nidn','menu_access']);
   ensureHeader(SHEET.KATEGORI,     ['id_kategori','nama_kategori','icon','folder_id','urutan','kode_arsip']);
   ensureHeader(SHEET.SUB_KATEGORI, ['id_sub_kategori','id_kategori','nama_sub_kategori','kode_sub']);
   ensureHeader(SHEET.DATA_AKADEMIK,['id_data','kode_arsip','id_kategori','nama_kategori',
