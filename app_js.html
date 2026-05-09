@@ -98,9 +98,45 @@ function isAlumni()      { return getRole() === 'alumni'; }
 function isOperator()    { return getRole() === 'operator'; }
 function isPengaturanHidden() { return isMahasiswa() || isAlumni(); }
 
+// ==================================================================
+// PERMISSION HELPERS (per-user granular access)
+// ==================================================================
+/**
+ * Cek apakah user saat ini memiliki izin [action] pada [menuKey].
+ * Admin selalu diberi semua akses.
+ * Jika user TIDAK memiliki entry permission → gunakan fallback role.
+ * Jika ada entry permission → gunakan itu secara ketat.
+ *
+ * action: 'view' | 'create' | 'edit' | 'delete'
+ */
+function hasPermission(menuKey, action) {
+    if (isAdmin()) return true;   // Admin selalu full-access
+    var perms = (currentUser && currentUser.permissions) ? currentUser.permissions : {};
+    // Jika tidak ada entry permission untuk menu ini → pakai fallback role
+    if (!perms[menuKey]) {
+        // Fallback: operator dan dosen punya view saja untuk semua menu
+        if (action === 'view') return isDosen() || isOperator();
+        if (action === 'create' || action === 'edit' || action === 'delete') return isOperator();
+        return false;
+    }
+    return !!perms[menuKey][action];
+}
+
+/** Cek apakah user boleh MELIHAT menu ini sama sekali */
+function canViewMenu(menuKey) {
+    return hasPermission(menuKey, 'view');
+}
+
 // Cek apakah kategori boleh diakses oleh role saat ini
 function katBolehDiakses(kat) {
-    if (isAdmin() || isDosen() || isOperator()) return true;
+    if (isAdmin()) return true;
+    // Cek permission per kategori kode (gunakan kode_arsip lowercase sebagai key)
+    var menuKey = 'kat_' + (kat.kode_arsip || kat.id).toLowerCase();
+    var perms = (currentUser && currentUser.permissions) ? currentUser.permissions : {};
+    // Jika ada entry permission spesifik untuk kat ini → pakai itu
+    if (perms[menuKey] !== undefined) return !!perms[menuKey]['view'];
+    // Fallback lama berdasarkan role
+    if (isDosen() || isOperator()) return true;
     if (isMahasiswa()) return kat.kode_arsip === 'MHS' || kat.kode_arsip === 'ALU';
     if (isAlumni())    return kat.kode_arsip === 'ALU';
     return false;
@@ -108,14 +144,35 @@ function katBolehDiakses(kat) {
 
 // Cek apakah role saat ini boleh menambah/menghapus arsip pada kategori tersebut
 function canEditArsip(katKode) {
-    if (isAdmin() || isDosen() || isOperator()) return true;
+    if (isAdmin()) return true;
+    var menuKey = 'kat_' + (katKode || '').toLowerCase();
+    var perms = (currentUser && currentUser.permissions) ? currentUser.permissions : {};
+    if (perms[menuKey] !== undefined) return !!(perms[menuKey]['create']);
+    // Fallback
+    if (isDosen() || isOperator()) return true;
     if (isMahasiswa() && katKode === 'MHS') return true;
-    if (isAlumni() && katKode === 'ALU') return true;
+    if (isAlumni()    && katKode === 'ALU') return true;
     return false;
 }
 
+function canDeleteArsip(katKode) {
+    if (isAdmin()) return true;
+    var menuKey = 'kat_' + (katKode || '').toLowerCase();
+    var perms = (currentUser && currentUser.permissions) ? currentUser.permissions : {};
+    if (perms[menuKey] !== undefined) return !!(perms[menuKey]['delete']);
+    return isOperator();
+}
+
+function canEditRowArsip(katKode) {
+    if (isAdmin()) return true;
+    var menuKey = 'kat_' + (katKode || '').toLowerCase();
+    var perms = (currentUser && currentUser.permissions) ? currentUser.permissions : {};
+    if (perms[menuKey] !== undefined) return !!(perms[menuKey]['edit']);
+    return isDosen() || isOperator();
+}
+
 // ==================================================================
-// MENU DINAMIS (role-aware)
+// MENU DINAMIS (role-aware + permission-aware)
 // ==================================================================
 function renderMenu() {
     var mc = document.getElementById('dynamicMenuList');
@@ -138,14 +195,29 @@ function renderMenu() {
         if (el) el.style.display = isAdmin() ? '' : 'none';
     });
 
-    // Dosen bisa akses Setting (ubah profil)
+    // Manajemen User: hanya tampil jika punya permission view
     var settingEl = document.querySelector('[data-target="setting"]');
-    if (settingEl) settingEl.style.display = isPengaturanHidden() ? 'none' : '';
+    if (settingEl) {
+        if (isPengaturanHidden()) {
+            settingEl.style.display = 'none';
+        } else if (!isAdmin()) {
+            settingEl.style.display = canViewMenu('setting') ? '' : 'none';
+        } else {
+            settingEl.style.display = '';
+        }
+    }
+
+    // Dashboard: sembunyikan jika tidak punya permission
+    var dashEl = document.querySelector('[data-target="dashboard"]');
+    if (dashEl && !isAdmin()) {
+        dashEl.style.display = canViewMenu('dashboard') ? '' : 'none';
+    }
 
     // Update sidebar user info
     var roleLabel = document.getElementById('sidebarRole');
     if (roleLabel) roleLabel.innerText = getRole();
 }
+
 
 function applySystemSettings() {
     var s = CACHE.settings || {};
@@ -195,7 +267,7 @@ function applySystemSettings() {
 }
 
 // ==================================================================
-// NAVIGASI SPA (role-aware)
+// NAVIGASI SPA (role-aware + permission-aware)
 // ==================================================================
 function setupNavigation() {
     document.body.addEventListener('click', function(e) {
@@ -212,6 +284,21 @@ function setupNavigation() {
         if (!isAdmin() && adminTargets.indexOf(target) >= 0) {
             showNotif('error', 'Akses Ditolak', 'Menu ini hanya untuk Admin.'); return;
         }
+
+        // ── Cek permission per-user untuk menu non-kategori ──
+        var fixedMenuMap = {
+            'dashboard': 'dashboard',
+            'kategori': 'kategori',
+            'sub_kategori': 'sub_kategori',
+            'panduan_admin': 'panduan_admin',
+            'kelola_dosen': 'kelola_dosen',
+            'setting': 'setting',
+            'pengaturan_aplikasi': 'pengaturan_aplikasi'
+        };
+        if (fixedMenuMap[target] && !canViewMenu(fixedMenuMap[target])) {
+            showNotif('error', 'Akses Ditolak', 'Anda tidak memiliki izin untuk mengakses menu ini.'); return;
+        }
+
         // Blokir kategori yang tidak boleh diakses
         if (target.startsWith('kat_')) {
             var katId2 = item.getAttribute('data-kat-id');
@@ -300,7 +387,9 @@ function buildDataPageHtml(container, katId, katNama, subList, dataList) {
     window._currentKatKode = katObj ? katObj.kode_arsip : '';
     var uploaderTh = showUploader ? '<th>Uploader</th>' : '';
 
-    var btnTambahHtml = canEditArsip(window._currentKatKode) ? '<button class="btn btn-primary" onclick="openUploadModal(\'' + katId + '\', \'' + katNama + '\')" ><i class="fa-solid fa-plus"></i> Tambah Arsip</button>' : '';
+    var btnTambahHtml = canEditArsip(window._currentKatKode)
+        ? '<button class="btn btn-primary" onclick="openUploadModal(\'' + katId + '\', \'' + katNama + '\')" ><i class="fa-solid fa-plus"></i> Tambah Arsip</button>'
+        : '';
 
     container.innerHTML =
         '<div class="card"><div class="card-header"><div class="card-title"><i class="fa-solid fa-database" style="margin-right:8px; color:var(--primary-red)"></i>Arsip ' + katNama + '</div>' +
@@ -372,7 +461,8 @@ function applyFilter(page) {
             (window._showUploader ? '<td style="font-size:12px; color:var(--text-muted);"><i class="fa-solid fa-user" style="margin-right:4px;"></i>' + (d.uploader || '-') + '</td>' : '') +
             '<td><div class="action-btns">' +
                 (d.file_url ? '<a href="' + d.file_url + '" target="_blank" class="btn-icon btn-view" title="Lihat"><i class="fa-solid fa-eye"></i></a>' : '') +
-                (canEditArsip(window._currentKatKode) ? '<button class="btn-icon btn-delete" title="Hapus" onclick="confirmHapusArsip(\'' + d.id + '\', \'' + d.nama_arsip.replace(/'/g, "\\'") + '\')" ><i class="fa-solid fa-trash-can"></i></button>' : '') +
+                (canEditRowArsip(window._currentKatKode) ? '<button class="btn-icon btn-edit" title="Edit" onclick="openEditArsipModal(\'' + d.id + '\', \'' + d.nama_arsip.replace(/\'/g, "\\'" ) + '\', \'' + d.tahun + '\', \'' + (d.sub_kategori||'') + '\')" ><i class="fa-solid fa-pen"></i></button>' : '') +
+                (canDeleteArsip(window._currentKatKode) ? '<button class="btn-icon btn-delete" title="Hapus" onclick="confirmHapusArsip(\'' + d.id + '\', \'' + d.nama_arsip.replace(/\'/g, "\\'") + '\')" ><i class="fa-solid fa-trash-can"></i></button>' : '') +
             '</div></td></tr>';
     });
     tb.innerHTML = html;

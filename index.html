@@ -886,9 +886,32 @@
         // checkSession dipanggil dari app_js.html setelah semua fungsi terdefinisi
         function checkSession() {
             var saved = localStorage.getItem('dataprodi_user');
-            if (saved) { try { showDashboard(JSON.parse(saved)); } catch (e) { localStorage.removeItem('dataprodi_user'); showLogin(); } }
-            else { showLogin(); }
+            if (saved) {
+                try {
+                    var savedUser = JSON.parse(saved);
+                    // Langsung tampilkan dulu agar responsif
+                    showDashboard(savedUser);
+                    // Kemudian refresh permissions dari server agar selalu up-to-date
+                    google.script.run
+                        .withSuccessHandler(function(freshPerms) {
+                            if (currentUser) {
+                                currentUser.permissions = freshPerms;
+                                // Update localStorage juga
+                                localStorage.setItem('dataprodi_user', JSON.stringify(currentUser));
+                                // Re-render menu agar visibility menu ikut di-update
+                                if (typeof renderMenu === 'function') renderMenu();
+                            }
+                        })
+                        .getUserPermissions(savedUser.id);
+                } catch (e) {
+                    localStorage.removeItem('dataprodi_user');
+                    showLogin();
+                }
+            } else {
+                showLogin();
+            }
         }
+
 
         // ============================================================
         // LOGIN

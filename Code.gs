@@ -154,20 +154,26 @@ function loginUser(username, password) {
     if (data[i][1] === username && decodePwd(data[i][2]) === password && data[i][4] === 'active') {
       var logSheet = getSheet(SHEET.LOGIN_LOG);
       logSheet.appendRow([generateId(), username, data[i][3], new Date()]);
+      var userId = data[i][0];
+      // Ambil permissions user ini
+      var perms = {};
+      try { perms = getUserPermissions(userId); } catch(e) {}
       return {
         success: true,
         user: {
-          id:       data[i][0],
-          username: data[i][1],
-          role:     data[i][3],
-          nama:     data[i][5] || username,
-          nip_nidn: data[i][6] || ''
+          id:          userId,
+          username:    data[i][1],
+          role:        data[i][3],
+          nama:        data[i][5] || username,
+          nip_nidn:    data[i][6] || '',
+          permissions: perms   // <-- disertakan saat login
         }
       };
     }
   }
   return { success: false, message: 'Username atau Password salah.' };
 }
+
 
 function getLoginLogs() {
   var sheet = getSheet(SHEET.LOGIN_LOG);
