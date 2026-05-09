@@ -712,23 +712,34 @@ function renderSettingPage(container) {
         .getUserList();
 }
 
-// Daftar menu yang bisa diatur hak aksesnya
-var MENU_DEFINITIONS = [
-    { key: 'dashboard',           label: 'Dashboard',            icon: 'fa-chart-pie' },
-    { key: 'akademik',            label: 'Data Akademik',        icon: 'fa-book' },
-    { key: 'penelitian',          label: 'Data Penelitian',      icon: 'fa-flask' },
-    { key: 'pengabdian',          label: 'Data Pengabdian',      icon: 'fa-hand-holding-heart' },
-    { key: 'mutu_prodi',          label: 'Mutu Prodi',           icon: 'fa-award' },
-    { key: 'data_dosen',          label: 'Data Dosen',           icon: 'fa-chalkboard-user' },
-    { key: 'data_mahasiswa',      label: 'Data Mahasiswa',       icon: 'fa-users' },
-    { key: 'data_alumni',         label: 'Data Alumni',          icon: 'fa-user-graduate' },
-    { key: 'kategori',            label: 'Kategori & Menu',      icon: 'fa-layer-group' },
-    { key: 'sub_kategori',        label: 'Sub-Kategori',         icon: 'fa-sitemap' },
-    { key: 'kelola_dosen',        label: 'Kelola Dosen',         icon: 'fa-user-tie' },
-    { key: 'panduan_admin',       label: 'Panduan Menu',         icon: 'fa-book-open' },
-    { key: 'setting',             label: 'Manajemen User',       icon: 'fa-users-gear' },
-    { key: 'pengaturan_aplikasi', label: 'Pengaturan Aplikasi',  icon: 'fa-sliders' }
-];
+function getMenuDefinitions() {
+    var menus = [ { key: 'dashboard', label: 'Dashboard', icon: 'fa-chart-pie' } ];
+    
+    // Tambahkan semua kategori arsip secara dinamis
+    if (typeof kategoriData !== 'undefined') {
+        kategoriData.forEach(function(kat) {
+            // Gunakan kode_arsip jika ada (lowercased), jika tidak fallback ke kat_id
+            var k = (kat.kode_arsip || '').toLowerCase();
+            if (!k) k = 'kat_' + kat.id;
+            menus.push({
+                key: k,
+                label: kat.nama,
+                icon: kat.icon || 'fa-folder'
+            });
+        });
+    }
+
+    // Tambahkan menu-menu admin
+    menus.push(
+        { key: 'kategori',            label: 'Kategori & Menu',      icon: 'fa-layer-group' },
+        { key: 'sub_kategori',        label: 'Sub-Kategori',         icon: 'fa-sitemap' },
+        { key: 'kelola_dosen',        label: 'Kelola Dosen',         icon: 'fa-user-tie' },
+        { key: 'panduan_admin',       label: 'Panduan Menu',         icon: 'fa-book-open' },
+        { key: 'setting',             label: 'Manajemen User',       icon: 'fa-users-gear' },
+        { key: 'pengaturan_aplikasi', label: 'Pengaturan Aplikasi',  icon: 'fa-sliders' }
+    );
+    return menus;
+}
 
 function openPermissionModal(userId, userName) {
     var user = (window._userCache||[]).find(function(u){ return u.id === userId; });
@@ -747,9 +758,9 @@ function openPermissionModal(userId, userName) {
 
     var modal = document.getElementById(modalId);
 
-    // Kumpulkan daftar menu dari MENU_DEFINITIONS ditambah kategori arsip (opsional, jika ingin lebih detil)
-    // Untuk saat ini, kita ikuti MENU_DEFINITIONS dasar
-    var rows = MENU_DEFINITIONS.map(function(menu) {
+    var dynamicMenus = getMenuDefinitions();
+
+    var rows = dynamicMenus.map(function(menu) {
         // Jika ma === null, semua tercentang by default untuk Admin, Dosen & Operator default dashboard dll.
         // Tapi kita akan buat form ini eksklusif: Jika tidak dicentang, artinya tidak bisa akses.
         var isChecked = false;
