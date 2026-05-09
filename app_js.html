@@ -716,7 +716,7 @@ function renderSettingPage(container) {
             var tb = document.getElementById('userTableBody');
             if (tb) tb.innerHTML = '<tr><td colspan="5" style="color:red; text-align:center;">Gagal: ' + err.message + '</td></tr>';
         })
-        .getAllUsersWithPermissions();
+        .getUserList();
 }
 
 // Daftar menu yang bisa diatur hak aksesnya
@@ -739,9 +739,9 @@ var MENU_DEFINITIONS = [
 
 function openPermissionModal(userId, userName) {
     var user = (window._userCache||[]).find(function(u){ return u.id === userId; });
-    var existingPerms = (user && user.permissions) ? user.permissions : {};
+    var ma = (user && user.menuAccess) ? user.menuAccess : null; // null = default role
 
-    // Buat modal dinamis jika belum ada
+    // Pastikan modal dinamis ada
     var modalId = 'permissionModal';
     var existing = document.getElementById(modalId);
     if (!existing) {
@@ -754,25 +754,37 @@ function openPermissionModal(userId, userName) {
 
     var modal = document.getElementById(modalId);
 
+    // Kumpulkan daftar menu dari MENU_DEFINITIONS ditambah kategori arsip (opsional, jika ingin lebih detil)
+    // Untuk saat ini, kita ikuti MENU_DEFINITIONS dasar
     var rows = MENU_DEFINITIONS.map(function(menu) {
-        var p = existingPerms[menu.key] || {};
-        var chk = function(action) {
-            return '<label style="display:flex;align-items:center;justify-content:center;gap:4px;cursor:pointer;">' +
-                '<input type="checkbox" id="perm_' + userId + '_' + menu.key + '_' + action + '" ' +
-                (p[action] ? 'checked' : '') + ' style="width:16px;height:16px;accent-color:var(--primary-red);cursor:pointer;">' +
-                '</label>';
-        };
+        // Jika ma === null, semua tercentang by default untuk Admin, Dosen & Operator default dashboard dll.
+        // Tapi kita akan buat form ini eksklusif: Jika tidak dicentang, artinya tidak bisa akses.
+        var isChecked = false;
+        if (ma === null) {
+            // Default check state
+            if (user.role === 'admin') isChecked = true;
+            else if (user.role === 'dosen' || user.role === 'operator') {
+                if (['dashboard','kategori','sub_kategori','panduan_admin','kelola_dosen','pengaturan_aplikasi','setting'].indexOf(menu.key) === -1) {
+                    isChecked = true;
+                } else if (menu.key === 'dashboard') isChecked = true;
+            }
+        } else {
+            isChecked = ma.indexOf(menu.key) >= 0;
+        }
+
         return '<tr style="border-bottom:1px solid #f0f0f0;">' +
-            '<td style="padding:10px 12px;"><i class="fa-solid ' + menu.icon + '" style="color:var(--primary-red);margin-right:8px;width:16px;text-align:center;"></i>' + menu.label + '</td>' +
-            '<td style="text-align:center;padding:8px;">' + chk('view') + '</td>' +
-            '<td style="text-align:center;padding:8px;">' + chk('create') + '</td>' +
-            '<td style="text-align:center;padding:8px;">' + chk('edit') + '</td>' +
-            '<td style="text-align:center;padding:8px;">' + chk('delete') + '</td>' +
+            '<td style="padding:12px 16px;"><i class="fa-solid ' + menu.icon + '" style="color:var(--primary-red);margin-right:8px;width:20px;text-align:center;"></i>' + menu.label + '</td>' +
+            '<td style="text-align:right;padding:12px 16px;">' +
+                '<label style="display:inline-flex;align-items:center;cursor:pointer;">' +
+                '<input type="checkbox" class="perm-chk" data-key="' + menu.key + '" id="perm_' + userId + '_' + menu.key + '" ' +
+                (isChecked ? 'checked' : '') + ' style="width:18px;height:18px;accent-color:var(--primary-red);cursor:pointer;">' +
+                '</label>' +
+            '</td>' +
             '</tr>';
     }).join('');
 
     modal.innerHTML =
-        '<div class="modal-content" style="max-width:640px;padding:0;border-radius:16px;overflow:hidden;">' +
+        '<div class="modal-content" style="max-width:500px;padding:0;border-radius:16px;overflow:hidden;">' +
         '<div style="background:linear-gradient(135deg,#6f42c1,#4a148c);padding:22px 28px;display:flex;align-items:center;gap:14px;">' +
         '<div style="width:42px;height:42px;background:rgba(255,255,255,0.2);border-radius:10px;display:flex;align-items:center;justify-content:center;">' +
         '<i class="fa-solid fa-shield-halved" style="color:white;font-size:20px;"></i></div>' +
@@ -783,31 +795,25 @@ function openPermissionModal(userId, userName) {
         '</div>' +
         '<div style="padding:0 0 20px;">' +
         '<p style="margin:0;padding:14px 24px;font-size:13px;color:var(--text-muted);background:#fafafa;border-bottom:1px solid #f0f0f0;">' +
-        'Centang aksi yang diizinkan untuk setiap menu. Admin memiliki akses penuh ke semua menu secara default.</p>' +
+        'Centang menu yang boleh diakses oleh user ini. Hak akses Edit/Delete akan mengikuti aturan standar peran (role) mereka.</p>' +
         '<div style="overflow-x:auto;max-height:420px;overflow-y:auto;">' +
         '<table style="width:100%;border-collapse:collapse;font-size:14px;">' +
         '<thead><tr style="background:#f8f9fa;position:sticky;top:0;z-index:1;">' +
-        '<th style="text-align:left;padding:12px 12px;font-weight:600;color:var(--text-main);border-bottom:2px solid #e0e0e0;">Menu</th>' +
-        '<th style="text-align:center;padding:12px 8px;font-weight:600;color:#1565C0;border-bottom:2px solid #e0e0e0;min-width:60px;"><i class="fa-solid fa-eye"></i><br><small>View</small></th>' +
-        '<th style="text-align:center;padding:12px 8px;font-weight:600;color:#2e7d32;border-bottom:2px solid #e0e0e0;min-width:60px;"><i class="fa-solid fa-plus"></i><br><small>Create</small></th>' +
-        '<th style="text-align:center;padding:12px 8px;font-weight:600;color:#e65100;border-bottom:2px solid #e0e0e0;min-width:60px;"><i class="fa-solid fa-pen"></i><br><small>Edit</small></th>' +
-        '<th style="text-align:center;padding:12px 8px;font-weight:600;color:#c62828;border-bottom:2px solid #e0e0e0;min-width:60px;"><i class="fa-solid fa-trash"></i><br><small>Delete</small></th>' +
+        '<th style="text-align:left;padding:12px 16px;font-weight:600;color:var(--text-main);border-bottom:2px solid #e0e0e0;">Nama Menu</th>' +
+        '<th style="text-align:right;padding:12px 16px;font-weight:600;color:var(--text-main);border-bottom:2px solid #e0e0e0;">Boleh Akses</th>' +
         '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
         '<div style="padding:16px 24px 0;display:flex;gap:10px;justify-content:flex-end;">' +
-        '<button onclick="selectAllPerms(\'' + userId + '\',true)" style="font-size:12px;padding:7px 14px;border:1px solid #6f42c1;background:transparent;color:#6f42c1;border-radius:6px;cursor:pointer;"><i class="fa-solid fa-check-double"></i> Pilih Semua</button>' +
-        '<button onclick="selectAllPerms(\'' + userId + '\',false)" style="font-size:12px;padding:7px 14px;border:1px solid #ccc;background:transparent;color:#666;border-radius:6px;cursor:pointer;"><i class="fa-solid fa-xmark"></i> Hapus Semua</button>' +
+        '<button onclick="selectAllPerms(true)" style="font-size:12px;padding:7px 14px;border:1px solid #6f42c1;background:transparent;color:#6f42c1;border-radius:6px;cursor:pointer;"><i class="fa-solid fa-check-double"></i> Pilih Semua</button>' +
+        '<button onclick="selectAllPerms(false)" style="font-size:12px;padding:7px 14px;border:1px solid #ccc;background:transparent;color:#666;border-radius:6px;cursor:pointer;"><i class="fa-solid fa-xmark"></i> Hapus Semua</button>' +
         '<button id="btnSavePerms_' + userId + '" onclick="savePermissions(\'' + userId + '\')" class="btn" style="background:#6f42c1;color:white;padding:8px 20px;border-radius:8px;font-weight:600;font-size:14px;"><i class="fa-solid fa-save"></i> Simpan Hak Akses</button>' +
         '</div></div></div>';
 
     modal.classList.add('active');
 }
 
-function selectAllPerms(userId, checked) {
-    MENU_DEFINITIONS.forEach(function(menu) {
-        ['view','create','edit','delete'].forEach(function(action) {
-            var el = document.getElementById('perm_' + userId + '_' + menu.key + '_' + action);
-            if (el) el.checked = checked;
-        });
+function selectAllPerms(checked) {
+    document.querySelectorAll('.perm-chk').forEach(function(el) {
+        el.checked = checked;
     });
 }
 
@@ -815,16 +821,9 @@ function savePermissions(userId) {
     var btn = document.getElementById('btnSavePerms_' + userId);
     if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...'; }
 
-    var perms = {};
-    MENU_DEFINITIONS.forEach(function(menu) {
-        var actions = {};
-        ['view','create','edit','delete'].forEach(function(action) {
-            var el = document.getElementById('perm_' + userId + '_' + menu.key + '_' + action);
-            actions[action] = el ? el.checked : false;
-        });
-        // Hanya simpan menu yang punya minimal satu aksi dicentang
-        var hasAny = Object.keys(actions).some(function(k){ return actions[k]; });
-        if (hasAny) perms[menu.key] = actions;
+    var allowedMenus = [];
+    document.querySelectorAll('.perm-chk').forEach(function(el) {
+        if (el.checked) allowedMenus.push(el.getAttribute('data-key'));
     });
 
     google.script.run
@@ -840,7 +839,7 @@ function savePermissions(userId) {
             if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-save"></i> Simpan Hak Akses'; }
             showNotif('error', 'Gagal', err.message);
         })
-        .saveUserPermissions(userId, perms);
+        .saveUserMenuAccess(userId, allowedMenus);
 }
 
 
