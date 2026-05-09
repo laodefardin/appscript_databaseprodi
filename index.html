@@ -895,14 +895,14 @@
                     google.script.run
                         .withSuccessHandler(function(freshPerms) {
                             if (currentUser) {
-                                currentUser.permissions = freshPerms;
+                                currentUser.menuAccess = freshPerms;
                                 // Update localStorage juga
                                 localStorage.setItem('dataprodi_user', JSON.stringify(currentUser));
                                 // Re-render menu agar visibility menu ikut di-update
                                 if (typeof renderMenu === 'function') renderMenu();
                             }
                         })
-                        .getUserPermissions(savedUser.id);
+                        .getUserMenuAccess(savedUser.id);
                 } catch (e) {
                     localStorage.removeItem('dataprodi_user');
                     showLogin();
