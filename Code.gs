@@ -14,7 +14,8 @@ const SHEET = {
   DATA_AKADEMIK: 'Data_Akademik',
   LOGIN_LOG: 'Login_Log',
   SETTINGS: 'Settings',
-  PANDUAN: 'Panduan'
+  PANDUAN: 'Panduan',
+  USER_PERMISSIONS: 'User_Permissions'
 };
 
 // Kode kategori yang boleh diakses per role
@@ -484,10 +485,77 @@ function deleteUser(id) {
         if (cnt <= 1) return { success: false, message: 'Tidak bisa menghapus satu-satunya admin!' };
       }
       sheet.deleteRow(i+1);
+      // Hapus juga permissions user ini
+      try {
+        var ps = getSheet(SHEET.USER_PERMISSIONS);
+        var pd = ps.getDataRange().getValues();
+        for (var k = pd.length - 1; k >= 1; k--) {
+          if (pd[k][0] === id) ps.deleteRow(k+1);
+        }
+      } catch(e) {}
       return { success: true, message: 'User berhasil dihapus.' };
     }
   }
   return { success: false, message: 'User tidak ditemukan.' };
+}
+
+// ==================================================================
+// USER PERMISSIONS (Hak Akses per Menu)
+// ==================================================================
+function getUserPermissions(userId) {
+  var sheet = getSheet(SHEET.USER_PERMISSIONS);
+  var data  = sheet.getDataRange().getValues();
+  var perms = {};
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][0] === userId) {
+      var menuKey = data[i][1];
+      var actions = {};
+      try { actions = JSON.parse(data[i][2] || '{}'); } catch(e) { actions = {}; }
+      perms[menuKey] = actions;
+    }
+  }
+  return perms;
+}
+
+function saveUserPermissions(userId, permissionsObj) {
+  // permissionsObj: { menuKey: { view: true, create: false, edit: true, delete: false }, ... }
+  var sheet = getSheet(SHEET.USER_PERMISSIONS);
+  var data  = sheet.getDataRange().getValues();
+
+  // Hapus baris lama untuk user ini
+  for (var i = data.length - 1; i >= 1; i--) {
+    if (data[i][0] === userId) sheet.deleteRow(i + 1);
+  }
+
+  // Tulis baris baru
+  for (var menuKey in permissionsObj) {
+    sheet.appendRow([userId, menuKey, JSON.stringify(permissionsObj[menuKey]), new Date()]);
+  }
+
+  return { success: true, message: 'Hak akses berhasil disimpan.' };
+}
+
+function getAllUsersWithPermissions() {
+  var users = getUserList();
+  var sheet = getSheet(SHEET.USER_PERMISSIONS);
+  var data  = sheet.getDataRange().getValues();
+
+  // Build map: userId -> { menuKey: actions }
+  var permMap = {};
+  for (var i = 1; i < data.length; i++) {
+    var uid = data[i][0];
+    var menuKey = data[i][1];
+    var actions = {};
+    try { actions = JSON.parse(data[i][2] || '{}'); } catch(e){}
+    if (!permMap[uid]) permMap[uid] = {};
+    permMap[uid][menuKey] = actions;
+  }
+
+  users.forEach(function(u) {
+    u.permissions = permMap[u.id] || {};
+  });
+
+  return users;
 }
 
 // ==================================================================

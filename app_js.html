@@ -619,27 +619,170 @@ function renderSettingPage(container) {
     }
 
     // ADMIN: tampilkan lengkap user management
-    container.innerHTML = 
-        '<div class="card"><div class="card-header"><div class="card-title"><i class="fa-solid fa-users-gear" style="margin-right:8px; color:var(--primary-red)"></i>Manajemen User</div><button class="btn btn-primary" onclick="openUserModal()"><i class="fa-solid fa-user-plus"></i> Tambah User</button></div><div class="table-responsive"><table><thead><tr><th>No</th><th>Username</th><th>Role</th><th>Status</th><th style="width:120px;">Aksi</th></tr></thead><tbody id="userTableBody"><tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr></tbody></table></div></div>';
+    container.innerHTML =
+        '<div class="card" style="overflow:hidden;">' +
+        '<div class="card-header"><div class="card-title"><i class="fa-solid fa-users-gear" style="margin-right:8px; color:var(--primary-red)"></i>Manajemen User</div>' +
+        '<button class="btn btn-primary" onclick="openUserModal()"><i class="fa-solid fa-user-plus"></i> Tambah User</button></div>' +
+        '<div class="table-responsive"><table><thead><tr>' +
+        '<th>No</th><th>Nama / Username</th><th>Role</th><th>Status</th><th style="min-width:200px;">Aksi</th>' +
+        '</tr></thead><tbody id="userTableBody"><tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr></tbody></table></div></div>';
 
     google.script.run
         .withSuccessHandler(function(users) {
+            window._userCache = users;
             var rows = '';
             users.forEach(function(u, i) {
                 var sb = u.status === 'active' ? '<span class="badge badge-success">Aktif</span>' : '<span class="badge badge-pdf">Nonaktif</span>';
                 var roleMap = {admin:'Admin',operator:'Operator',dosen:'Dosen',mahasiswa_aktif:'Mahasiswa',alumni:'Alumni'};
                 var rb = '<span class="badge badge-file">' + (roleMap[u.role]||u.role) + '</span>';
-                rows += '<tr><td>'+(i+1)+'</td><td><strong>'+u.username+'</strong></td><td>'+rb+'</td><td>'+sb+'</td><td><div class="action-btns"><button class="btn-icon btn-edit" onclick="openPasswordModal(\'' + u.id + '\',\'' + u.username.replace(/'/g, "\\'") + '\')"><i class="fa-solid fa-key"></i></button><button class="btn-icon" style="background:#f39c12;" onclick="confirmToggle(\'' + u.id + '\',\'' + u.username.replace(/'/g, "\\'") + '\')"><i class="fa-solid fa-toggle-on"></i></button><button class="btn-icon btn-delete" onclick="confirmHapusUser(\'' + u.id + '\',\'' + u.username.replace(/'/g, "\\'") + '\')"><i class="fa-solid fa-trash-can"></i></button></div></td></tr>';
+                var nama = u.nama ? '<strong>' + u.nama + '</strong><br><small style="color:var(--text-muted);">' + u.username + '</small>' : '<strong>' + u.username + '</strong>';
+                rows += '<tr>' +
+                    '<td>' + (i+1) + '</td>' +
+                    '<td>' + nama + '</td>' +
+                    '<td>' + rb + '</td>' +
+                    '<td>' + sb + '</td>' +
+                    '<td><div class="action-btns" style="gap:5px;">' +
+                    '<button class="btn-icon btn-edit" title="Ubah Password" onclick="openPasswordModal(\'' + u.id + '\',\'' + u.username.replace(/'/g,"\\'") + '\')"><i class="fa-solid fa-key"></i></button>' +
+                    '<button class="btn-icon" style="background:#6f42c1;color:white;" title="Atur Hak Akses" onclick="openPermissionModal(\'' + u.id + '\',\'' + (u.nama||u.username).replace(/'/g,"\\'") + '\')"><i class="fa-solid fa-shield-halved"></i></button>' +
+                    '<button class="btn-icon" style="background:#f39c12;" title="Ubah Status" onclick="confirmToggle(\'' + u.id + '\',\'' + u.username.replace(/'/g,"\\'") + '\')"><i class="fa-solid fa-toggle-on"></i></button>' +
+                    '<button class="btn-icon btn-delete" title="Hapus User" onclick="confirmHapusUser(\'' + u.id + '\',\'' + u.username.replace(/'/g,"\\'") + '\')"><i class="fa-solid fa-trash-can"></i></button>' +
+                    '</div></td></tr>';
             });
             var tb = document.getElementById('userTableBody');
             if (tb) tb.innerHTML = rows || '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">Belum ada user.</td></tr>';
         })
-        .withFailureHandler(function(err){ 
+        .withFailureHandler(function(err){
             var tb = document.getElementById('userTableBody');
             if (tb) tb.innerHTML = '<tr><td colspan="5" style="color:red; text-align:center;">Gagal: ' + err.message + '</td></tr>';
         })
-        .getUserList();
+        .getAllUsersWithPermissions();
 }
+
+// Daftar menu yang bisa diatur hak aksesnya
+var MENU_DEFINITIONS = [
+    { key: 'dashboard',           label: 'Dashboard',            icon: 'fa-chart-pie' },
+    { key: 'akademik',            label: 'Data Akademik',        icon: 'fa-book' },
+    { key: 'penelitian',          label: 'Data Penelitian',      icon: 'fa-flask' },
+    { key: 'pengabdian',          label: 'Data Pengabdian',      icon: 'fa-hand-holding-heart' },
+    { key: 'mutu_prodi',          label: 'Mutu Prodi',           icon: 'fa-award' },
+    { key: 'data_dosen',          label: 'Data Dosen',           icon: 'fa-chalkboard-user' },
+    { key: 'data_mahasiswa',      label: 'Data Mahasiswa',       icon: 'fa-users' },
+    { key: 'data_alumni',         label: 'Data Alumni',          icon: 'fa-user-graduate' },
+    { key: 'kategori',            label: 'Kategori & Menu',      icon: 'fa-layer-group' },
+    { key: 'sub_kategori',        label: 'Sub-Kategori',         icon: 'fa-sitemap' },
+    { key: 'kelola_dosen',        label: 'Kelola Dosen',         icon: 'fa-user-tie' },
+    { key: 'panduan_admin',       label: 'Panduan Menu',         icon: 'fa-book-open' },
+    { key: 'setting',             label: 'Manajemen User',       icon: 'fa-users-gear' },
+    { key: 'pengaturan_aplikasi', label: 'Pengaturan Aplikasi',  icon: 'fa-sliders' }
+];
+
+function openPermissionModal(userId, userName) {
+    var user = (window._userCache||[]).find(function(u){ return u.id === userId; });
+    var existingPerms = (user && user.permissions) ? user.permissions : {};
+
+    // Buat modal dinamis jika belum ada
+    var modalId = 'permissionModal';
+    var existing = document.getElementById(modalId);
+    if (!existing) {
+        var m = document.createElement('div');
+        m.id = modalId;
+        m.className = 'modal-overlay';
+        m.onclick = function(e) { if (e.target === m) m.classList.remove('active'); };
+        document.body.appendChild(m);
+    }
+
+    var modal = document.getElementById(modalId);
+
+    var rows = MENU_DEFINITIONS.map(function(menu) {
+        var p = existingPerms[menu.key] || {};
+        var chk = function(action) {
+            return '<label style="display:flex;align-items:center;justify-content:center;gap:4px;cursor:pointer;">' +
+                '<input type="checkbox" id="perm_' + userId + '_' + menu.key + '_' + action + '" ' +
+                (p[action] ? 'checked' : '') + ' style="width:16px;height:16px;accent-color:var(--primary-red);cursor:pointer;">' +
+                '</label>';
+        };
+        return '<tr style="border-bottom:1px solid #f0f0f0;">' +
+            '<td style="padding:10px 12px;"><i class="fa-solid ' + menu.icon + '" style="color:var(--primary-red);margin-right:8px;width:16px;text-align:center;"></i>' + menu.label + '</td>' +
+            '<td style="text-align:center;padding:8px;">' + chk('view') + '</td>' +
+            '<td style="text-align:center;padding:8px;">' + chk('create') + '</td>' +
+            '<td style="text-align:center;padding:8px;">' + chk('edit') + '</td>' +
+            '<td style="text-align:center;padding:8px;">' + chk('delete') + '</td>' +
+            '</tr>';
+    }).join('');
+
+    modal.innerHTML =
+        '<div class="modal-content" style="max-width:640px;padding:0;border-radius:16px;overflow:hidden;">' +
+        '<div style="background:linear-gradient(135deg,#6f42c1,#4a148c);padding:22px 28px;display:flex;align-items:center;gap:14px;">' +
+        '<div style="width:42px;height:42px;background:rgba(255,255,255,0.2);border-radius:10px;display:flex;align-items:center;justify-content:center;">' +
+        '<i class="fa-solid fa-shield-halved" style="color:white;font-size:20px;"></i></div>' +
+        '<div style="flex:1;"><h3 style="margin:0;color:white;font-size:17px;">Hak Akses Menu</h3>' +
+        '<p style="margin:0;color:rgba(255,255,255,0.8);font-size:13px;">User: <strong>' + userName + '</strong></p></div>' +
+        '<button onclick="document.getElementById(\'permissionModal\').classList.remove(\'active\')" ' +
+        'style="background:rgba(255,255,255,0.2);border:none;color:white;width:32px;height:32px;border-radius:8px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button>' +
+        '</div>' +
+        '<div style="padding:0 0 20px;">' +
+        '<p style="margin:0;padding:14px 24px;font-size:13px;color:var(--text-muted);background:#fafafa;border-bottom:1px solid #f0f0f0;">' +
+        'Centang aksi yang diizinkan untuk setiap menu. Admin memiliki akses penuh ke semua menu secara default.</p>' +
+        '<div style="overflow-x:auto;max-height:420px;overflow-y:auto;">' +
+        '<table style="width:100%;border-collapse:collapse;font-size:14px;">' +
+        '<thead><tr style="background:#f8f9fa;position:sticky;top:0;z-index:1;">' +
+        '<th style="text-align:left;padding:12px 12px;font-weight:600;color:var(--text-main);border-bottom:2px solid #e0e0e0;">Menu</th>' +
+        '<th style="text-align:center;padding:12px 8px;font-weight:600;color:#1565C0;border-bottom:2px solid #e0e0e0;min-width:60px;"><i class="fa-solid fa-eye"></i><br><small>View</small></th>' +
+        '<th style="text-align:center;padding:12px 8px;font-weight:600;color:#2e7d32;border-bottom:2px solid #e0e0e0;min-width:60px;"><i class="fa-solid fa-plus"></i><br><small>Create</small></th>' +
+        '<th style="text-align:center;padding:12px 8px;font-weight:600;color:#e65100;border-bottom:2px solid #e0e0e0;min-width:60px;"><i class="fa-solid fa-pen"></i><br><small>Edit</small></th>' +
+        '<th style="text-align:center;padding:12px 8px;font-weight:600;color:#c62828;border-bottom:2px solid #e0e0e0;min-width:60px;"><i class="fa-solid fa-trash"></i><br><small>Delete</small></th>' +
+        '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
+        '<div style="padding:16px 24px 0;display:flex;gap:10px;justify-content:flex-end;">' +
+        '<button onclick="selectAllPerms(\'' + userId + '\',true)" style="font-size:12px;padding:7px 14px;border:1px solid #6f42c1;background:transparent;color:#6f42c1;border-radius:6px;cursor:pointer;"><i class="fa-solid fa-check-double"></i> Pilih Semua</button>' +
+        '<button onclick="selectAllPerms(\'' + userId + '\',false)" style="font-size:12px;padding:7px 14px;border:1px solid #ccc;background:transparent;color:#666;border-radius:6px;cursor:pointer;"><i class="fa-solid fa-xmark"></i> Hapus Semua</button>' +
+        '<button id="btnSavePerms_' + userId + '" onclick="savePermissions(\'' + userId + '\')" class="btn" style="background:#6f42c1;color:white;padding:8px 20px;border-radius:8px;font-weight:600;font-size:14px;"><i class="fa-solid fa-save"></i> Simpan Hak Akses</button>' +
+        '</div></div></div>';
+
+    modal.classList.add('active');
+}
+
+function selectAllPerms(userId, checked) {
+    MENU_DEFINITIONS.forEach(function(menu) {
+        ['view','create','edit','delete'].forEach(function(action) {
+            var el = document.getElementById('perm_' + userId + '_' + menu.key + '_' + action);
+            if (el) el.checked = checked;
+        });
+    });
+}
+
+function savePermissions(userId) {
+    var btn = document.getElementById('btnSavePerms_' + userId);
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...'; }
+
+    var perms = {};
+    MENU_DEFINITIONS.forEach(function(menu) {
+        var actions = {};
+        ['view','create','edit','delete'].forEach(function(action) {
+            var el = document.getElementById('perm_' + userId + '_' + menu.key + '_' + action);
+            actions[action] = el ? el.checked : false;
+        });
+        // Hanya simpan menu yang punya minimal satu aksi dicentang
+        var hasAny = Object.keys(actions).some(function(k){ return actions[k]; });
+        if (hasAny) perms[menu.key] = actions;
+    });
+
+    google.script.run
+        .withSuccessHandler(function(r) {
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-save"></i> Simpan Hak Akses'; }
+            showNotif(r.success ? 'success' : 'error', r.success ? 'Berhasil!' : 'Gagal', r.message);
+            if (r.success) {
+                document.getElementById('permissionModal').classList.remove('active');
+                renderSettingPage(document.getElementById('mainContentArea'));
+            }
+        })
+        .withFailureHandler(function(err) {
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-save"></i> Simpan Hak Akses'; }
+            showNotif('error', 'Gagal', err.message);
+        })
+        .saveUserPermissions(userId, perms);
+}
+
+
 
 function openUserModal() { document.getElementById('userModal').classList.add('active'); document.getElementById('userForm').reset(); }
 
