@@ -127,8 +127,9 @@ function katBolehDiakses(kat) {
     // Jika ada menuAccess custom → gunakan
     var ma = currentUser && currentUser.menuAccess;
     if (ma !== null && ma !== undefined && Array.isArray(ma)) {
-        // Cek berdasarkan nama kategori atau id
-        return ma.indexOf('kat_' + kat.id) >= 0 || ma.indexOf(kat.id) >= 0 || ma.indexOf(kat.nama) >= 0;
+        // Cek berdasarkan kode_arsip (kunci menu), nama kategori, atau id
+        var kode = (kat.kode_arsip || '').toLowerCase();
+        return ma.indexOf(kode) >= 0 || ma.indexOf('kat_' + kat.id) >= 0 || ma.indexOf(kat.id) >= 0 || ma.indexOf(kat.nama) >= 0;
     }
     // Fallback default role
     if (isDosen() || isOperator()) return true;
@@ -139,10 +140,6 @@ function katBolehDiakses(kat) {
 
 function canEditArsip(katKode) {
     if (isAdmin()) return true;
-    var ma = currentUser && currentUser.menuAccess;
-    if (ma !== null && ma !== undefined && Array.isArray(ma)) {
-        return false; // view-only jika ada custom access
-    }
     if (isDosen() || isOperator()) return true;
     if (isMahasiswa() && katKode === 'MHS') return true;
     if (isAlumni()    && katKode === 'ALU') return true;
@@ -151,16 +148,12 @@ function canEditArsip(katKode) {
 
 function canDeleteArsip(katKode) {
     if (isAdmin()) return true;
-    var ma = currentUser && currentUser.menuAccess;
-    if (ma !== null && ma !== undefined && Array.isArray(ma)) return false;
     return isOperator();
 }
 
 function canEditRowArsip(katKode) {
     if (isAdmin()) return true;
-    var ma = currentUser && currentUser.menuAccess;
-    if (ma !== null && ma !== undefined && Array.isArray(ma)) return false;
-    return isOperator();
+    return isDosen() || isOperator();
 }
 
 // ==================================================================
